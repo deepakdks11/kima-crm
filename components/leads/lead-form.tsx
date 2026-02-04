@@ -21,7 +21,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import { Lead } from '@/lib/types';
+import { Lead, LeadSegment, LeadSubSegment, LeadProductFit, LeadStatus, LeadSource } from '@/lib/types';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import { ActivityLogList } from '@/components/activity/activity-log-list';
 
@@ -29,6 +29,14 @@ interface LeadFormProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     lead?: Lead | null; // If present, edit mode
+}
+
+function toLocalISOString(dateStr: string | null): string {
+    if (!dateStr) return '';
+    const date = new Date(dateStr);
+    const offset = date.getTimezoneOffset() * 60000;
+    const localDate = new Date(date.getTime() - offset);
+    return localDate.toISOString().slice(0, 16);
 }
 
 export function LeadForm({ open, onOpenChange, lead }: LeadFormProps) {
@@ -71,8 +79,8 @@ export function LeadForm({ open, onOpenChange, lead }: LeadFormProps) {
             setFormData({
                 ...lead,
                 // Ensure dates are in the correct format for datetime-local input if they exist
-                last_contact_date: lead.last_contact_date ? new Date(lead.last_contact_date).toISOString() : null,
-                next_followup_date: lead.next_followup_date ? new Date(lead.next_followup_date).toISOString() : null,
+                last_contact_date: lead.last_contact_date,
+                next_followup_date: lead.next_followup_date,
             });
         } else if (open && !lead) {
             // Reset form for new lead when dialog opens
@@ -104,7 +112,7 @@ export function LeadForm({ open, onOpenChange, lead }: LeadFormProps) {
         }
     }, [open, lead]);
 
-    const logActivity = async (leadId: string, action: string, details: any) => {
+    const logActivity = async (leadId: string, action: string, details: Record<string, unknown>) => {
         try {
             await supabase.from('activity_logs').insert([{
                 lead_id: leadId,
@@ -117,7 +125,7 @@ export function LeadForm({ open, onOpenChange, lead }: LeadFormProps) {
     };
 
     const getChanges = (oldData: Lead, newData: Partial<Lead>) => {
-        const changes: Record<string, { from: any, to: any }> = {};
+        const changes: Record<string, { from: unknown, to: unknown }> = {};
         const keys = Object.keys(newData) as (keyof Lead)[];
 
         keys.forEach(key => {
@@ -286,7 +294,7 @@ export function LeadForm({ open, onOpenChange, lead }: LeadFormProps) {
                             <Label htmlFor="segment">Segment</Label>
                             <Select
                                 value={formData.segment || 'Web2'}
-                                onValueChange={(val: any) => setFormData({ ...formData, segment: val })}
+                                onValueChange={(val: string) => setFormData({ ...formData, segment: val as LeadSegment })}
                             >
                                 <SelectTrigger>
                                     <SelectValue placeholder="Select" />
@@ -301,7 +309,7 @@ export function LeadForm({ open, onOpenChange, lead }: LeadFormProps) {
                             <Label htmlFor="sub_segment">Sub Segment</Label>
                             <Select
                                 value={formData.sub_segment || ''}
-                                onValueChange={(val: any) => setFormData({ ...formData, sub_segment: val })}
+                                onValueChange={(val: string) => setFormData({ ...formData, sub_segment: val as LeadSubSegment })}
                             >
                                 <SelectTrigger>
                                     <SelectValue placeholder="Select" />
@@ -320,7 +328,7 @@ export function LeadForm({ open, onOpenChange, lead }: LeadFormProps) {
                             <Label htmlFor="product_fit">Product Fit</Label>
                             <Select
                                 value={formData.product_fit || ''}
-                                onValueChange={(val: any) => setFormData({ ...formData, product_fit: val })}
+                                onValueChange={(val: string) => setFormData({ ...formData, product_fit: val as LeadProductFit })}
                             >
                                 <SelectTrigger>
                                     <SelectValue placeholder="Select" />
@@ -382,7 +390,7 @@ export function LeadForm({ open, onOpenChange, lead }: LeadFormProps) {
                             <Label htmlFor="status">Status</Label>
                             <Select
                                 value={formData.status || 'New'}
-                                onValueChange={(val: any) => setFormData({ ...formData, status: val })}
+                                onValueChange={(val: string) => setFormData({ ...formData, status: val as LeadStatus })}
                             >
                                 <SelectTrigger>
                                     <SelectValue placeholder="Select status" />
@@ -401,7 +409,7 @@ export function LeadForm({ open, onOpenChange, lead }: LeadFormProps) {
                             <Label htmlFor="source">Source</Label>
                             <Select
                                 value={formData.source || 'Website'}
-                                onValueChange={(val: any) => setFormData({ ...formData, source: val })}
+                                onValueChange={(val: string) => setFormData({ ...formData, source: val as LeadSource })}
                             >
                                 <SelectTrigger>
                                     <SelectValue placeholder="Select source" />
@@ -422,7 +430,7 @@ export function LeadForm({ open, onOpenChange, lead }: LeadFormProps) {
                             <Input
                                 id="next_followup"
                                 type="datetime-local"
-                                value={formData.next_followup_date ? new Date(formData.next_followup_date).toISOString().slice(0, 16) : ''}
+                                value={toLocalISOString(formData.next_followup_date || null)}
                                 onChange={(e) => setFormData({ ...formData, next_followup_date: e.target.value ? new Date(e.target.value).toISOString() : null })}
                             />
                         </div>
@@ -431,7 +439,7 @@ export function LeadForm({ open, onOpenChange, lead }: LeadFormProps) {
                             <Input
                                 id="last_contact"
                                 type="datetime-local"
-                                value={formData.last_contact_date ? new Date(formData.last_contact_date).toISOString().slice(0, 16) : ''}
+                                value={toLocalISOString(formData.last_contact_date || null)}
                                 onChange={(e) => setFormData({ ...formData, last_contact_date: e.target.value ? new Date(e.target.value).toISOString() : null })}
                             />
                         </div>

@@ -33,8 +33,8 @@ export default function LoginPage() {
 
             router.refresh(); // Update server components check
             router.push('/dashboard');
-        } catch (err: any) {
-            setError(err.message);
+        } catch (err: unknown) {
+            setError(err instanceof Error ? err.message : 'An unknown error occurred');
         } finally {
             setLoading(false);
         }
@@ -52,8 +52,8 @@ export default function LoginPage() {
             });
             if (error) throw error;
             alert('Check your email for confirmation link!');
-        } catch (err: any) {
-            setError(err.message);
+        } catch (err: unknown) {
+            setError(err instanceof Error ? err.message : 'An unknown error occurred');
         } finally {
             setLoading(false);
         }
@@ -102,7 +102,7 @@ export default function LoginPage() {
                                 {loading ? 'Logging in...' : 'Log In'}
                             </Button>
                             <div className="text-center text-xs text-gray-400">
-                                <span className="cursor-pointer hover:underline" onClick={handleSignUp}>Don't have an account? Sign up</span>
+                                <span className="cursor-pointer hover:underline" onClick={handleSignUp}>Don&apos;t have an account? Sign up</span>
                             </div>
                         </div>
                     </form>

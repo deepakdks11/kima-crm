@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -10,7 +9,7 @@ interface ActivityLog {
     id: string;
     created_at: string;
     action: string;
-    details: any;
+    details: unknown;
     user_id: string; // Could join with auth.users if we had access, or just show 'User'
 }
 
@@ -77,25 +76,35 @@ function formatAction(action: string) {
     }
 }
 
-function formatDetails(details: any) {
+function formatDetails(details: unknown) {
     if (!details) return null;
     if (typeof details === 'string') return details;
 
     // Check if it's a change object { field: { from, to }}
-    if (Object.keys(details).length > 0 && typeof Object.values(details)[0] === 'object') {
-        return Object.entries(details).map(([key, val]: [string, any]) => {
-            if (val?.from !== undefined && val?.to !== undefined) {
-                return (
-                    <div key={key}>
-                        <span className="font-medium capitalize">{key.replace('_', ' ')}</span>:
-                        <span className="line-through mx-1 text-gray-400">{val.from || 'Empty'}</span>
-                        &rarr;
-                        <span className="ml-1 text-gray-800">{val.to || 'Empty'}</span>
-                    </div>
-                );
+    if (typeof details === 'object' && details !== null) {
+        const entries = Object.entries(details as Record<string, unknown>);
+        if (entries.length > 0) {
+            // Check if values look like { from, to }
+            const firstVal = entries[0][1];
+            if (typeof firstVal === 'object' && firstVal !== null && 'from' in firstVal) {
+                return entries.map(([key, val]) => {
+                    const change = val as { from?: unknown, to?: unknown };
+                    if (change?.from !== undefined || change?.to !== undefined) {
+                        const fromStr = change.from ? String(change.from) : 'Empty';
+                        const toStr = change.to ? String(change.to) : 'Empty';
+                        return (
+                            <div key={key}>
+                                <span className="font-medium capitalize">{key.replace('_', ' ')}</span>:
+                                <span className="line-through mx-1 text-gray-400">{fromStr}</span>
+                                &rarr;
+                                <span className="ml-1 text-gray-800">{toStr}</span>
+                            </div>
+                        );
+                    }
+                    return <div key={key}>{JSON.stringify(val)}</div>
+                });
             }
-            return <div key={key}>{JSON.stringify(val)}</div>
-        });
+        }
     }
 
     return JSON.stringify(details);

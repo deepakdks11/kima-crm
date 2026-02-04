@@ -1,9 +1,8 @@
-
 'use client';
 
 import { useState } from 'react';
 import Papa from 'papaparse';
-import { Button } from '@/components/ui/button';
+// import { Button } from '@/components/ui/button'; // Unused
 import { createClient } from '@/lib/supabase/client';
 import {
     Dialog,
@@ -32,12 +31,15 @@ export function CSVImporter({ open, onOpenChange }: CSVImporterProps) {
         setUploading(true);
         setSummary('Parsing...');
 
-        Papa.parse(file, {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        Papa.parse(file as any, {
             header: true,
             skipEmptyLines: true,
-            complete: async (results) => {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            complete: async (results: any) => {
                 try {
-                    const rows = results.data as any[];
+                    // Start of fix for explicit any
+                    const rows = results.data as Record<string, string | undefined>[];
 
                     if (rows.length === 0) {
                         setSummary('No data found in CSV.');
@@ -50,15 +52,15 @@ export function CSVImporter({ open, onOpenChange }: CSVImporterProps) {
                     // Let's do simple mapping: Name -> lead_name, Email -> email, etc.
 
                     const leads = rows.map((row) => ({
-                        lead_name: row.Name || row.name || row.lead_name,
-                        company_name: row.Company || row.company || row.company_name,
-                        email: row.Email || row.email,
+                        lead_name: row.Name || row.name || row.lead_name || 'Unknown',
+                        company_name: row.Company || row.company || row.company_name || null,
+                        email: row.Email || row.email || null,
                         segment: row.Segment || row.segment || 'Web2',
-                        sub_segment: row.SubSegment || row.sub_segment,
+                        sub_segment: row.SubSegment || row.sub_segment || null,
                         status: 'New', // Default
                         source: 'Cold Outreach', // Default for import
                         created_at: new Date().toISOString()
-                    })).filter(l => l.lead_name); // Valid leads only
+                    })).filter(l => l.lead_name && l.lead_name !== 'Unknown'); // Valid leads only
 
                     setSummary(`Uploading ${leads.length} leads...`);
 
@@ -75,17 +77,19 @@ export function CSVImporter({ open, onOpenChange }: CSVImporterProps) {
                             setSummary(null);
                         }, 1500);
                     }
-                } catch (err: any) {
-                    setSummary(`Error: ${err.message}`);
+                } catch (err: unknown) {
+                    const message = err instanceof Error ? err.message : 'Unknown error';
+                    setSummary(`Error: ${message}`);
                 } finally {
                     setUploading(false);
                 }
             },
-            error: (err: any) => {
+            error: (err: Papa.ParseError) => {
                 setSummary(`CSV Parse Error: ${err.message}`);
                 setUploading(false);
             }
-        });
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        } as any);
     };
 
     return (

@@ -1,0 +1,83 @@
+
+> kima-crm@0.1.0 lint
+> eslint
+
+
+C:\Users\Axel\kima-crm\app\(auth)\login\page.tsx
+   36:23   error  Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+   55:23   error  Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+  105:108  error  `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
+
+C:\Users\Axel\kima-crm\app\(dashboard)\customers\page.tsx
+  39:61  error  `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+  39:71  error  `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+
+C:\Users\Axel\kima-crm\app\(dashboard)\dashboard\page.tsx
+    5:17  warning  'Building2' is defined but never used                            @typescript-eslint/no-unused-vars
+    9:10  warning  'format' is defined but never used                               @typescript-eslint/no-unused-vars
+   82:43  error    `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
+   82:50  error    `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
+  141:34  error    'KanbanSquare' is not defined                                    react/jsx-no-undef
+  190:91  error    Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+
+C:\Users\Axel\kima-crm\app\(dashboard)\docs\page.tsx
+  56:54  error  Parsing error: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+
+C:\Users\Axel\kima-crm\app\(dashboard)\follow-ups\page.tsx
+   3:52  warning  'CardDescription' is defined but never used                      @typescript-eslint/no-unused-vars
+   4:10  warning  'Badge' is defined but never used                                @typescript-eslint/no-unused-vars
+  36:36  error    `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
+
+C:\Users\Axel\kima-crm\app\(dashboard)\leads\page.tsx
+  32:91   error  `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+  32:100  error  `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+
+C:\Users\Axel\kima-crm\app\(dashboard)\page.tsx
+  157:30  error  `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
+
+C:\Users\Axel\kima-crm\app\(dashboard)\segments\page.tsx
+  4:10  warning  'Badge' is defined but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\Axel\kima-crm\components\dashboard\sidebar.tsx
+  14:5  warning  'LogOut' is defined but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\Axel\kima-crm\components\pipeline\kanban-board.tsx
+   7:16  warning  'CardHeader' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            @typescript-eslint/no-unused-vars
+  15:12  warning  'leads' is assigned a value but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        @typescript-eslint/no-unused-vars
+  19:9   error    Error: Cannot access variable before it is declared
+
+`fetchLeads` is accessed before it is declared, which prevents the earlier access from updating when this value changes over time.
+
+C:\Users\Axel\kima-crm\components\pipeline\kanban-board.tsx:19:9
+  17 |
+  18 |     useEffect(() => {
+> 19 |         fetchLeads();
+     |         ^^^^^^^^^^ `fetchLeads` accessed before it is declared
+  20 |     }, []);
+  21 |
+  22 |     const fetchLeads = async () => {
+
+C:\Users\Axel\kima-crm\components\pipeline\kanban-board.tsx:22:5
+  20 |     }, []);
+  21 |
+> 22 |     const fetchLeads = async () => {
+     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 23 |         const { data } = await supabase.from('leads').select('*');
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 24 |         if (data) {
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 25 |             setLeads(data);
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 26 |             organizeColumns(data);
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 27 |         }
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 28 |     };
+     | ^^^^^^^ `fetchLeads` is declared here
+  29 |
+  30 |     const organizeColumns = (data: Lead[]) => {
+  31 |         const cols: Record<string, Lead[]> = {};  react-hooks/immutability
+  20:8   warning  React Hook useEffect has a missing dependency: 'fetchLeads'. Either include it or remove the dependency array                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     react-hooks/exhaustive-deps
+
+✖ 24 problems (15 errors, 9 warnings)
+

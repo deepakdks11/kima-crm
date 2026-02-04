@@ -47,5 +47,5 @@ export interface ActivityLog {
     lead_id: string;
     user_id: string | null;
     action: string;
-    details: any; // JSON
+    details: Record<string, unknown>; // JSON
 }
