@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { AlertCircle } from 'lucide-react';
+import { AlertCircle, Zap, Loader2 } from 'lucide-react';
 
 export default function LoginPage() {
     const router = useRouter();
@@ -60,54 +60,98 @@ export default function LoginPage() {
     }
 
     return (
-        <div className="flex h-screen items-center justify-center bg-gray-100">
-            <Card className="w-[350px]">
-                <CardHeader>
-                    <CardTitle className="text-2xl">Login</CardTitle>
-                    <CardDescription>Enter your credentials to access the CRM</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <form onSubmit={handleLogin} className="space-y-4">
-                        <div className="space-y-2">
-                            <Label htmlFor="email">Email</Label>
-                            <Input
-                                id="email"
-                                type="email"
-                                placeholder="m@example.com"
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                                required
-                            />
-                        </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="password">Password</Label>
-                            <Input
-                                id="password"
-                                type="password"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                required
-                            />
-                        </div>
+        <div className="min-h-screen w-full flex items-center justify-center bg-background relative overflow-hidden">
+            {/* Background Decorative Elements */}
+            <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none z-0">
+                <div className="absolute -top-[25%] -left-[10%] w-[50%] h-[50%] rounded-full bg-primary/5 blur-[120px]" />
+                <div className="absolute -bottom-[25%] -right-[10%] w-[50%] h-[50%] rounded-full bg-primary/10 blur-[120px]" />
+            </div>
 
-                        {error && (
-                            <div className="flex items-center gap-2 text-sm text-red-600 bg-red-50 p-2 rounded">
-                                <AlertCircle className="h-4 w-4" />
-                                {error}
-                            </div>
-                        )}
+            <div className="w-full max-w-[400px] px-4 relative z-10">
+                {/* Logo Header */}
+                <div className="flex flex-col items-center gap-6 mb-8 text-center">
+                    <div className="w-16 h-16 rounded-2xl bg-primary flex items-center justify-center shadow-2xl shadow-primary/20 animate-in zoom-in duration-500">
+                        <Zap className="h-10 w-10 text-primary-foreground fill-current" />
+                    </div>
+                    <div className="space-y-1">
+                        <h1 className="text-3xl font-bold tracking-tight">
+                            <span className="text-primary">Kima</span>CRM
+                        </h1>
+                        <p className="text-muted-foreground font-medium">Precision Lead Management</p>
+                    </div>
+                </div>
 
-                        <div className="flex flex-col gap-2">
-                            <Button type="submit" className="w-full" disabled={loading}>
-                                {loading ? 'Logging in...' : 'Log In'}
-                            </Button>
-                            <div className="text-center text-xs text-gray-400">
-                                <span className="cursor-pointer hover:underline" onClick={handleSignUp}>Don&apos;t have an account? Sign up</span>
+                <Card className="border-border/50 shadow-2xl shadow-primary/5 backdrop-blur-sm bg-card/80">
+                    <CardHeader className="space-y-1 pb-4">
+                        <CardTitle className="text-xl font-bold">Welcome Back</CardTitle>
+                        <CardDescription>Enter your credentials to access your dashboard</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <form onSubmit={handleLogin} className="space-y-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="email">Email</Label>
+                                <Input
+                                    id="email"
+                                    type="email"
+                                    placeholder="name@company.com"
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
+                                    className="bg-background"
+                                    required
+                                />
                             </div>
-                        </div>
-                    </form>
-                </CardContent>
-            </Card>
+                            <div className="space-y-2">
+                                <div className="flex items-center justify-between">
+                                    <Label htmlFor="password">Password</Label>
+                                    <span className="text-xs text-primary hover:underline cursor-pointer font-medium">Forgot?</span>
+                                </div>
+                                <Input
+                                    id="password"
+                                    type="password"
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    className="bg-background"
+                                    required
+                                />
+                            </div>
+
+                            {error && (
+                                <div className="flex items-center gap-2 text-sm text-destructive bg-destructive/10 p-3 rounded-xl border border-destructive/20 animate-in slide-in-from-top-2">
+                                    <AlertCircle className="h-4 w-4" />
+                                    {error}
+                                </div>
+                            )}
+
+                            <div className="flex flex-col gap-4 pt-2">
+                                <Button type="submit" className="w-full h-11 text-base font-semibold shadow-lg shadow-primary/25" disabled={loading}>
+                                    {loading ? (
+                                        <>
+                                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                            Authenticating...
+                                        </>
+                                    ) : 'Sign In'}
+                                </Button>
+                                <div className="text-center text-sm text-muted-foreground">
+                                    Don&apos;t have an account?{' '}
+                                    <span
+                                        className="text-primary font-semibold hover:underline cursor-pointer transition-colors"
+                                        onClick={handleSignUp}
+                                    >
+                                        Sign up now
+                                    </span>
+                                </div>
+                            </div>
+                        </form>
+                    </CardContent>
+                </Card>
+
+                {/* Footer Quote or Tip */}
+                <div className="mt-8 text-center">
+                    <p className="text-xs text-muted-foreground/60 italic">
+                        &quot;Turning leads into loyalty with data-driven insights.&quot;
+                    </p>
+                </div>
+            </div>
         </div>
     );
 }
