@@ -9,8 +9,46 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ActivityLogList } from "@/components/activity/activity-log-list";
 import { format } from 'date-fns';
-import { ArrowLeft, Edit, MessageSquare, Calendar } from "lucide-react";
+import {
+    ArrowLeft,
+    Edit,
+    MessageSquare,
+    Calendar,
+    Mail,
+    Globe,
+    DollarSign,
+    TrendingUp,
+    FileText,
+    Clock,
+    CheckCircle2,
+    Building2,
+    User as UserIcon,
+    MapPin
+} from "lucide-react";
 import Link from 'next/link';
+import { cn } from '@/lib/utils';
+
+const getSegmentBadgeClass = (segment: string) => {
+    const segmentLower = segment.toLowerCase();
+    if (segmentLower.includes('export')) return 'badge-exporter';
+    if (segmentLower.includes('freelance')) return 'badge-freelancer';
+    if (segmentLower.includes('agency')) return 'badge-agency';
+    if (segmentLower.includes('wallet')) return 'badge-wallet';
+    if (segmentLower.includes('dapp')) return 'badge-dapp';
+    if (segmentLower.includes('payment')) return 'badge-payments';
+    return '';
+};
+
+const getStatusBadgeClass = (status: string) => {
+    const statusLower = status.toLowerCase();
+    if (statusLower === 'new') return 'badge-new';
+    if (statusLower === 'contacted') return 'badge-contacted';
+    if (statusLower.includes('demo')) return 'badge-demo';
+    if (statusLower === 'negotiation') return 'badge-negotiation';
+    if (statusLower === 'onboarded') return 'badge-onboarded';
+    if (statusLower === 'lost') return 'badge-lost';
+    return '';
+};
 
 export default function LeadProfilePage({ params }: { params: Promise<{ id: string }> }) {
     const resolvedParams = use(params);
@@ -32,93 +70,222 @@ export default function LeadProfilePage({ params }: { params: Promise<{ id: stri
         fetchLead();
     }, [resolvedParams.id, supabase]);
 
-    if (loading) return <div className="p-12 text-center text-muted-foreground">Loading profile...</div>;
-    if (!lead) return <div className="p-12 text-center">Lead not found.</div>;
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center min-h-[400px]">
+                <div className="text-center space-y-3">
+                    <div className="h-12 w-12 rounded-full bg-primary/10 animate-pulse mx-auto" />
+                    <p className="text-sm text-muted-foreground">Loading profile...</p>
+                </div>
+            </div>
+        );
+    }
+
+    if (!lead) {
+        return (
+            <div className="flex items-center justify-center min-h-[400px]">
+                <div className="text-center space-y-3">
+                    <div className="h-16 w-16 rounded-full bg-muted flex items-center justify-center mx-auto">
+                        <UserIcon className="h-8 w-8 text-muted-foreground" />
+                    </div>
+                    <div>
+                        <h3 className="font-semibold text-lg">Lead not found</h3>
+                        <p className="text-sm text-muted-foreground">This lead may have been deleted.</p>
+                    </div>
+                    <Link href="/leads">
+                        <Button variant="outline" size="sm">
+                            <ArrowLeft className="h-4 w-4 mr-2" />
+                            Back to Leads
+                        </Button>
+                    </Link>
+                </div>
+            </div>
+        );
+    }
 
     return (
-        <div className="flex flex-col gap-6 max-w-5xl mx-auto">
-            <div className="flex items-center gap-4">
-                <Link href="/leads">
-                    <Button variant="ghost" size="icon">
-                        <ArrowLeft className="h-4 w-4" />
-                    </Button>
-                </Link>
-                <div className="flex-1">
-                    <h1 className="text-3xl font-bold tracking-tight">{lead.company_name || lead.lead_name}</h1>
-                    <div className="flex items-center gap-2 mt-1">
-                        <Badge variant="outline">{lead.segment}</Badge>
-                        <Badge>{lead.status}</Badge>
-                        <span className="text-xs text-muted-foreground ml-2">Score: {lead.lead_score}</span>
+        <div className="space-y-6 max-w-6xl mx-auto">
+            {/* Header */}
+            <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+                <div className="flex items-start gap-3">
+                    <Link href="/leads">
+                        <Button variant="ghost" size="icon" className="touch-target">
+                            <ArrowLeft className="h-5 w-5" />
+                        </Button>
+                    </Link>
+                    <div className="flex-1 min-w-0">
+                        <h1 className="text-2xl md:text-3xl font-bold tracking-tight truncate">
+                            {lead.company_name || lead.lead_name}
+                        </h1>
+                        <div className="flex flex-wrap items-center gap-2 mt-2">
+                            {lead.segment && (
+                                <Badge variant="outline" className={cn("font-normal", getSegmentBadgeClass(lead.segment))}>
+                                    {lead.segment}
+                                </Badge>
+                            )}
+                            {lead.status && (
+                                <Badge variant="outline" className={cn("font-normal capitalize", getStatusBadgeClass(lead.status))}>
+                                    {lead.status.toLowerCase()}
+                                </Badge>
+                            )}
+                            <div className="flex items-center gap-1 text-sm">
+                                <TrendingUp className="h-3 w-3 text-muted-foreground" />
+                                <span className={cn(
+                                    "font-semibold",
+                                    lead.lead_score > 80 ? "text-green-600 dark:text-green-400" : "text-muted-foreground"
+                                )}>
+                                    Score: {lead.lead_score}
+                                </span>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 <div className="flex gap-2">
-                    <Button variant="outline" size="sm">
+                    <Button variant="outline" size="sm" className="touch-target">
                         <MessageSquare className="h-4 w-4 mr-2" />
-                        Add Note
+                        <span className="hidden sm:inline">Add Note</span>
+                        <span className="sm:hidden">Note</span>
                     </Button>
-                    <Button size="sm">
+                    <Button size="sm" className="touch-target">
                         <Edit className="h-4 w-4 mr-2" />
-                        Edit Lead
+                        <span className="hidden sm:inline">Edit Lead</span>
+                        <span className="sm:hidden">Edit</span>
                     </Button>
                 </div>
             </div>
 
+            {/* Tabs */}
             <Tabs defaultValue="overview" className="w-full">
-                <TabsList className="w-full justify-start border-b bg-transparent rounded-none h-12 p-0 gap-8">
-                    <TabsTrigger value="overview" className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none h-full px-0">Overview</TabsTrigger>
-                    <TabsTrigger value="activity" className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none h-full px-0">Activity Timeline</TabsTrigger>
-                    <TabsTrigger value="followups" className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none h-full px-0">Follow-ups</TabsTrigger>
+                <TabsList className="w-full justify-start border-b bg-transparent rounded-none h-auto p-0 gap-4 md:gap-8">
+                    <TabsTrigger
+                        value="overview"
+                        className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none h-12 px-1 touch-target"
+                    >
+                        Overview
+                    </TabsTrigger>
+                    <TabsTrigger
+                        value="notes"
+                        className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none h-12 px-1 touch-target"
+                    >
+                        Notes
+                    </TabsTrigger>
+                    <TabsTrigger
+                        value="timeline"
+                        className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none h-12 px-1 touch-target"
+                    >
+                        Timeline
+                    </TabsTrigger>
+                    <TabsTrigger
+                        value="followups"
+                        className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none h-12 px-1 touch-target"
+                    >
+                        Follow-ups
+                    </TabsTrigger>
                 </TabsList>
 
-                <TabsContent value="overview" className="pt-6">
+                {/* Overview Tab */}
+                <TabsContent value="overview" className="pt-6 space-y-6">
                     <div className="grid gap-6 md:grid-cols-3">
-                        <Card className="md:col-span-2">
+                        {/* Business Details */}
+                        <Card className="md:col-span-2 border-border/50">
                             <CardHeader>
-                                <CardTitle>Business Details</CardTitle>
+                                <div className="flex items-center gap-2">
+                                    <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                                        <Building2 className="h-4 w-4 text-primary" />
+                                    </div>
+                                    <CardTitle>Business Details</CardTitle>
+                                </div>
                             </CardHeader>
-                            <CardContent className="grid gap-4 sm:grid-cols-2 text-sm">
-                                <div>
-                                    <p className="text-muted-foreground">Contact Person</p>
-                                    <p className="font-medium">{lead.lead_name}</p>
-                                </div>
-                                <div>
-                                    <p className="text-muted-foreground">Email</p>
-                                    <p className="font-medium">{lead.email || 'N/A'}</p>
-                                </div>
-                                <div>
-                                    <p className="text-muted-foreground">Currency Flow</p>
-                                    <p className="font-medium">{lead.currency_flow || 'N/A'}</p>
-                                </div>
-                                <div>
-                                    <p className="text-muted-foreground">Geography</p>
-                                    <p className="font-medium">{lead.client_geography || 'N/A'}</p>
-                                </div>
+                            <CardContent className="grid gap-6 sm:grid-cols-2">
+                                <InfoItem icon={UserIcon} label="Contact Person" value={lead.lead_name} />
+                                <InfoItem icon={Mail} label="Email" value={lead.email || 'Not provided'} />
+                                <InfoItem icon={DollarSign} label="Currency Flow" value={lead.currency_flow || 'Not specified'} />
+                                <InfoItem icon={MapPin} label="Geography" value={lead.client_geography || 'Not specified'} />
                             </CardContent>
                         </Card>
 
-                        <Card>
+                        {/* Tracking Info */}
+                        <Card className="border-border/50">
                             <CardHeader>
-                                <CardTitle>Tracking</CardTitle>
-                            </CardHeader>
-                            <CardContent className="grid gap-3 text-sm">
-                                <div className="flex justify-between">
-                                    <span className="text-muted-foreground">Source</span>
-                                    <span className="font-medium">{lead.source}</span>
+                                <div className="flex items-center gap-2">
+                                    <div className="h-8 w-8 rounded-lg bg-violet-500/10 flex items-center justify-center">
+                                        <FileText className="h-4 w-4 text-violet-500" />
+                                    </div>
+                                    <CardTitle>Tracking</CardTitle>
                                 </div>
-                                <div className="flex justify-between">
-                                    <span className="text-muted-foreground">Product</span>
-                                    <span className="font-medium">{lead.product_fit}</span>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                                <div className="flex justify-between items-start">
+                                    <span className="text-sm text-muted-foreground">Source</span>
+                                    <span className="text-sm font-medium text-right">{lead.source || 'Unknown'}</span>
+                                </div>
+                                <div className="flex justify-between items-start">
+                                    <span className="text-sm text-muted-foreground">Product Fit</span>
+                                    <span className="text-sm font-medium text-right">{lead.product_fit || 'Not assessed'}</span>
+                                </div>
+                                <div className="flex justify-between items-start">
+                                    <span className="text-sm text-muted-foreground">Created</span>
+                                    <span className="text-sm font-medium text-right">
+                                        {lead.created_at ? format(new Date(lead.created_at), 'MMM d, yyyy') : 'N/A'}
+                                    </span>
                                 </div>
                             </CardContent>
                         </Card>
                     </div>
+
+                    {/* Additional Info */}
+                    {lead.notes && (
+                        <Card className="border-border/50">
+                            <CardHeader>
+                                <CardTitle className="text-lg">Internal Notes</CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+                                    {lead.notes}
+                                </p>
+                            </CardContent>
+                        </Card>
+                    )}
                 </TabsContent>
 
-                <TabsContent value="activity" className="pt-6">
-                    <Card>
+                {/* Notes Tab */}
+                <TabsContent value="notes" className="pt-6">
+                    <Card className="border-border/50">
                         <CardHeader>
-                            <CardTitle>Audit Trail</CardTitle>
-                            <CardDescription>Comprehensive history of all interactions and status changes.</CardDescription>
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <CardTitle>Notes & Comments</CardTitle>
+                                    <CardDescription>Add context and track conversations</CardDescription>
+                                </div>
+                                <Button size="sm">
+                                    <MessageSquare className="h-4 w-4 mr-2" />
+                                    New Note
+                                </Button>
+                            </div>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-center py-12 text-muted-foreground">
+                                <MessageSquare className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                                <p className="font-medium">No notes yet</p>
+                                <p className="text-sm">Add your first note to track conversations and context.</p>
+                            </div>
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+
+                {/* Timeline Tab */}
+                <TabsContent value="timeline" className="pt-6">
+                    <Card className="border-border/50">
+                        <CardHeader>
+                            <div className="flex items-center gap-2">
+                                <div className="h-8 w-8 rounded-lg bg-blue-500/10 flex items-center justify-center">
+                                    <Clock className="h-4 w-4 text-blue-500" />
+                                </div>
+                                <div>
+                                    <CardTitle>Activity Timeline</CardTitle>
+                                    <CardDescription>Complete history of all interactions and changes</CardDescription>
+                                </div>
+                            </div>
                         </CardHeader>
                         <CardContent>
                             <ActivityLogList leadId={lead.id} />
@@ -126,26 +293,84 @@ export default function LeadProfilePage({ params }: { params: Promise<{ id: stri
                     </Card>
                 </TabsContent>
 
+                {/* Follow-ups Tab */}
                 <TabsContent value="followups" className="pt-6">
-                    <Card>
+                    <Card className="border-border/50">
                         <CardHeader>
-                            <CardTitle>Scheduled Follow-ups</CardTitle>
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <CardTitle>Scheduled Follow-ups</CardTitle>
+                                    <CardDescription>Manage upcoming touchpoints</CardDescription>
+                                </div>
+                                <Button size="sm">
+                                    <Calendar className="h-4 w-4 mr-2" />
+                                    Schedule
+                                </Button>
+                            </div>
                         </CardHeader>
                         <CardContent>
-                            <div className="flex items-center gap-4 p-4 border rounded-xl">
-                                <Calendar className="h-8 w-8 text-orange-500" />
-                                <div className="flex-1">
-                                    <p className="font-medium">Next Follow-up Call</p>
-                                    <p className="text-sm text-muted-foreground">
-                                        {lead.next_followup_date ? format(new Date(lead.next_followup_date), 'MMMM d, yyyy') : 'No date set'}
-                                    </p>
+                            {lead.next_followup_date ? (
+                                <div className="flex items-start gap-4 p-4 border border-border/50 rounded-xl bg-muted/30">
+                                    <div className="h-10 w-10 rounded-lg bg-orange-500/10 flex items-center justify-center flex-shrink-0">
+                                        <Calendar className="h-5 w-5 text-orange-500" />
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <p className="font-semibold">Next Follow-up Call</p>
+                                        <p className="text-sm text-muted-foreground mt-1">
+                                            {format(new Date(lead.next_followup_date), 'EEEE, MMMM d, yyyy')}
+                                        </p>
+                                        <p className="text-xs text-muted-foreground mt-2">
+                                            {formatDistanceToDate(new Date(lead.next_followup_date))}
+                                        </p>
+                                    </div>
+                                    <div className="flex gap-2">
+                                        <Button variant="outline" size="sm" className="touch-target">
+                                            <CheckCircle2 className="h-4 w-4 mr-2" />
+                                            Complete
+                                        </Button>
+                                        <Button variant="ghost" size="sm" className="touch-target">
+                                            Reschedule
+                                        </Button>
+                                    </div>
                                 </div>
-                                <Button variant="outline" size="sm">Reschedule</Button>
-                            </div>
+                            ) : (
+                                <div className="text-center py-12 text-muted-foreground">
+                                    <Calendar className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                                    <p className="font-medium">No follow-ups scheduled</p>
+                                    <p className="text-sm mb-4">Stay on top of your pipeline by scheduling your next touchpoint.</p>
+                                    <Button size="sm">
+                                        <Calendar className="h-4 w-4 mr-2" />
+                                        Schedule Follow-up
+                                    </Button>
+                                </div>
+                            )}
                         </CardContent>
                     </Card>
                 </TabsContent>
             </Tabs>
         </div>
     );
+}
+
+function InfoItem({ icon: Icon, label, value }: { icon: any; label: string; value: string }) {
+    return (
+        <div className="space-y-1">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Icon className="h-3.5 w-3.5" />
+                <span>{label}</span>
+            </div>
+            <p className="font-medium text-sm pl-5">{value}</p>
+        </div>
+    );
+}
+
+function formatDistanceToDate(date: Date) {
+    const now = new Date();
+    const diff = date.getTime() - now.getTime();
+    const days = Math.ceil(diff / (1000 * 60 * 60 * 24));
+
+    if (days < 0) return `${Math.abs(days)} days overdue`;
+    if (days === 0) return 'Today';
+    if (days === 1) return 'Tomorrow';
+    return `In ${days} days`;
 }

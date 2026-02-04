@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Users, Wallet, ArrowUpRight, CheckSquare, TrendingUp, Target, Activity, LayoutDashboard } from "lucide-react";
+import { Users, Target, TrendingUp, ArrowUpRight, Activity, LayoutDashboard, Wallet, CheckSquare } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { PipelineFunnel } from "@/components/dashboard/pipeline-funnel";
 import { SegmentPieChart } from "@/components/dashboard/segment-pie-chart";
@@ -16,8 +16,8 @@ interface KPICardProps {
     loading: boolean;
     icon: LucideIcon;
     description: string;
-    gradient: string;
-    iconColor: string;
+    trend?: string;
+    trendUp?: boolean;
 }
 
 export default function DashboardPage() {
@@ -35,7 +35,6 @@ export default function DashboardPage() {
     useEffect(() => {
         async function fetchDashboardData() {
             try {
-                // Fetch all leads for real-time aggregation
                 const { data: leads, error } = await supabase
                     .from('leads')
                     .select('status, segment');
@@ -82,42 +81,36 @@ export default function DashboardPage() {
     }, [supabase]);
 
     return (
-        <div className="space-y-10">
-            {/* Page Header / Welcome */}
-            <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
-                <div className="space-y-1">
-                    <h1 className="text-4xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-foreground to-foreground/60">
-                        Dashboard
-                    </h1>
-                    <p className="text-muted-foreground font-medium">
-                        Welcome back! Here&apos;s what&apos;s happening in your pipeline.
-                    </p>
-                </div>
-                <div className="flex items-center gap-3 px-4 py-2 bg-white/5 border border-white/10 rounded-2xl glass backdrop-blur-md">
-                    <Activity className="h-4 w-4 text-primary animate-pulse" />
-                    <span className="text-sm font-bold tracking-wide uppercase">Real-time Analytics</span>
-                </div>
+        <div className="space-y-8">
+            {/* Page Header */}
+            <div className="flex flex-col gap-1">
+                <h1 className="text-3xl md:text-4xl font-bold tracking-tight">
+                    Dashboard
+                </h1>
+                <p className="text-muted-foreground">
+                    Welcome back! Here's what's happening in your pipeline.
+                </p>
             </div>
 
             {/* KPI Cards */}
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+            <div className="grid gap-4 md:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
                 <KPICard
                     title="Total Leads"
                     value={stats.totalLeads}
                     loading={loading}
                     icon={Users}
-                    description="All time captured leads"
-                    gradient="from-blue-500/10 to-transparent"
-                    iconColor="text-blue-500"
+                    description="All captured leads"
+                    trend="+12% from last month"
+                    trendUp={true}
                 />
                 <KPICard
                     title="Web3 Segment"
                     value={stats.web3Segments}
                     loading={loading}
                     icon={Target}
-                    description="Strategic target accounts"
-                    gradient="from-indigo-500/10 to-transparent"
-                    iconColor="text-indigo-500"
+                    description="Strategic accounts"
+                    trend="+8% from last month"
+                    trendUp={true}
                 />
                 <KPICard
                     title="Demos Ready"
@@ -125,8 +118,8 @@ export default function DashboardPage() {
                     loading={loading}
                     icon={TrendingUp}
                     description="Scheduled presentations"
-                    gradient="from-purple-500/10 to-transparent"
-                    iconColor="text-purple-500"
+                    trend="+23% from last month"
+                    trendUp={true}
                 />
                 <KPICard
                     title="Active Deals"
@@ -134,22 +127,22 @@ export default function DashboardPage() {
                     loading={loading}
                     icon={ArrowUpRight}
                     description="High intent opportunities"
-                    gradient="from-pink-500/10 to-transparent"
-                    iconColor="text-pink-500"
+                    trend="In progress"
+                    trendUp={true}
                 />
             </div>
 
             {/* Charts Section */}
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-7">
-                <Card className="lg:col-span-4 glass-card overflow-hidden">
-                    <CardHeader className="border-b border-white/5 bg-white/5 backdrop-blur-sm">
+            <div className="grid gap-4 md:gap-6 grid-cols-1 lg:grid-cols-7">
+                <Card className="lg:col-span-4 overflow-hidden border-border/50 shadow-sm hover:shadow-md transition-shadow">
+                    <CardHeader className="border-b bg-muted/30">
                         <div className="flex items-center justify-between">
                             <div>
-                                <CardTitle className="text-lg">Pipeline Funnel</CardTitle>
+                                <CardTitle className="text-lg font-semibold">Pipeline Funnel</CardTitle>
                                 <CardDescription>Sales journey distribution</CardDescription>
                             </div>
-                            <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
-                                <LayoutDashboard className="h-4 w-4 text-primary" />
+                            <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                                <LayoutDashboard className="h-5 w-5 text-primary" />
                             </div>
                         </div>
                     </CardHeader>
@@ -158,15 +151,15 @@ export default function DashboardPage() {
                     </CardContent>
                 </Card>
 
-                <Card className="lg:col-span-3 glass-card overflow-hidden">
-                    <CardHeader className="border-b border-white/5 bg-white/5 backdrop-blur-sm">
+                <Card className="lg:col-span-3 overflow-hidden border-border/50 shadow-sm hover:shadow-md transition-shadow">
+                    <CardHeader className="border-b bg-muted/30">
                         <div className="flex items-center justify-between">
                             <div>
-                                <CardTitle className="text-lg">Lead Segments</CardTitle>
+                                <CardTitle className="text-lg font-semibold">Lead Segments</CardTitle>
                                 <CardDescription>Industry breakdown</CardDescription>
                             </div>
-                            <div className="h-8 w-8 rounded-full bg-secondary/20 flex items-center justify-center">
-                                <Wallet className="h-4 w-4 text-primary" />
+                            <div className="h-10 w-10 rounded-xl bg-violet-500/10 flex items-center justify-center">
+                                <Wallet className="h-5 w-5 text-violet-500" />
                             </div>
                         </div>
                     </CardHeader>
@@ -176,51 +169,73 @@ export default function DashboardPage() {
                 </Card>
             </div>
 
-            {/* Today's Tasks */}
-            <Card className="glass-card border-dashed">
+            {/* Today's Work Section */}
+            <Card className="border-dashed border-2 border-border/50">
                 <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-xl font-bold">
-                        <CheckSquare className="h-6 w-6 text-primary" />
-                        Intelligence Feed
-                    </CardTitle>
-                    <CardDescription>Automated insights and prioritized actions</CardDescription>
+                    <div className="flex items-center gap-3">
+                        <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                            <CheckSquare className="h-5 w-5 text-primary" />
+                        </div>
+                        <div>
+                            <CardTitle className="text-xl font-bold">Today's Priority Tasks</CardTitle>
+                            <CardDescription>Automated insights and prioritized actions</CardDescription>
+                        </div>
+                    </div>
                 </CardHeader>
                 <CardContent>
                     <div className="text-sm font-medium text-center text-muted-foreground py-12 flex flex-col items-center gap-3">
-                        <div className="h-12 w-12 rounded-full bg-primary/5 flex items-center justify-center border border-primary/10">
-                            <Activity className="h-6 w-6 text-primary/40" />
+                        <div className="h-16 w-16 rounded-full bg-primary/5 flex items-center justify-center border-2 border-primary/10">
+                            <Activity className="h-8 w-8 text-primary/40" />
                         </div>
-                        No urgent follow-ups required. Your pipeline is healthy!
+                        <div className="space-y-1">
+                            <p className="font-semibold text-foreground">All caught up!</p>
+                            <p className="text-xs">No urgent follow-ups required. Your pipeline is healthy.</p>
+                        </div>
                     </div>
                 </CardContent>
             </Card>
 
-            <div className="text-[10px] text-center text-muted-foreground/30 py-4">
-                Last updated: {format(new Date(), 'HH:mm:ss')}
+            {/* Footer Timestamp */}
+            <div className="text-xs text-center text-muted-foreground/50 py-2">
+                Last updated: {format(new Date(), 'MMM d, yyyy • HH:mm:ss')}
             </div>
         </div>
     );
 }
 
-function KPICard({ title, value, loading, icon: Icon, description, gradient, iconColor }: KPICardProps) {
+function KPICard({ title, value, loading, icon: Icon, description, trend, trendUp }: KPICardProps) {
     return (
-        <Card className={cn("glass-card overflow-hidden group transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl hover:shadow-primary/5 border-white/10 relative h-full")}>
-            <div className={cn("absolute inset-0 bg-gradient-to-br opacity-50", gradient)} />
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative z-10">
-                <CardTitle className="text-sm font-bold uppercase tracking-wider text-muted-foreground/80">{title}</CardTitle>
-                <div className={cn("p-2 rounded-xl bg-white/10 border border-white/10 group-hover:scale-110 transition-transform duration-300 shadow-sm", iconColor)}>
-                    <Icon className="h-4 w-4" />
+        <Card className={cn(
+            "overflow-hidden group transition-all duration-300 hover:-translate-y-1 hover:shadow-lg border-border/50 relative"
+        )}>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+                    {title}
+                </CardTitle>
+                <div className="p-2.5 rounded-xl bg-primary/10 group-hover:bg-primary/20 transition-colors">
+                    <Icon className="h-4 w-4 text-primary" />
                 </div>
             </CardHeader>
-            <CardContent className="relative z-10">
-                <div className="text-3xl font-black tracking-tight mb-1">
+            <CardContent className="space-y-1">
+                <div className="text-3xl font-bold tracking-tight">
                     {loading ? (
-                        <div className="h-8 w-16 bg-white/10 animate-pulse rounded" />
+                        <div className="h-9 w-20 bg-muted animate-pulse rounded" />
                     ) : (
                         value
                     )}
                 </div>
-                <p className="text-[11px] font-medium text-muted-foreground/70 uppercase tracking-tight">{description}</p>
+                <p className="text-xs text-muted-foreground">
+                    {description}
+                </p>
+                {trend && (
+                    <div className={cn(
+                        "text-xs font-medium flex items-center gap-1 pt-1",
+                        trendUp ? "text-green-600 dark:text-green-400" : "text-muted-foreground"
+                    )}>
+                        {trendUp && <TrendingUp className="h-3 w-3" />}
+                        {trend}
+                    </div>
+                )}
             </CardContent>
         </Card>
     );

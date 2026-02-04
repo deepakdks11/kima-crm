@@ -14,6 +14,22 @@ const badgeVariants = cva(
                 outline: "text-foreground",
                 web3: "border-transparent bg-purple-500 text-white hover:bg-purple-600",
                 web2: "border-transparent bg-blue-500 text-white hover:bg-blue-600",
+
+                // Segment-specific colors
+                exporter: "border-transparent bg-blue-500 text-white hover:bg-blue-600",
+                wallet: "border-transparent bg-violet-500 text-white hover:bg-violet-600",
+                dapp: "border-transparent bg-purple-500 text-white hover:bg-purple-600",
+                freelancer: "border-transparent bg-green-500 text-white hover:bg-green-600",
+                agency: "border-transparent bg-orange-500 text-white hover:bg-orange-600",
+                payments: "border-transparent bg-indigo-500 text-white hover:bg-indigo-600",
+
+                // Status-specific colors
+                new: "border-transparent bg-gray-500 text-white hover:bg-gray-600",
+                contacted: "border-transparent bg-blue-500 text-white hover:bg-blue-600",
+                demo: "border-transparent bg-green-500 text-white hover:bg-green-600",
+                negotiation: "border-transparent bg-yellow-500 text-white hover:bg-yellow-600",
+                onboarded: "border-transparent bg-emerald-500 text-white hover:bg-emerald-600",
+                lost: "border-transparent bg-red-500 text-white hover:bg-red-600",
             },
         },
         defaultVariants: {
