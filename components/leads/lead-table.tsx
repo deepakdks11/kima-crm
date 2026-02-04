@@ -12,7 +12,6 @@ import {
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import {
     Plus,
     MoreHorizontal,
@@ -22,7 +21,12 @@ import {
     Search,
     Filter,
     ExternalLink,
-    Inbox
+    Inbox,
+    Clock,
+    TrendingUp,
+    ChevronDown,
+    ArrowUp,
+    ArrowDown
 } from 'lucide-react';
 import { LeadForm } from '@/components/leads/lead-form';
 import { CSVImporter } from '@/components/leads/csv-importer';
@@ -38,10 +42,7 @@ import {
 import { format } from 'date-fns';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
-
-interface LeadTableProps {
-    initialLeads: Lead[];
-}
+import { useRouter, useSearchParams } from 'next/navigation';
 
 const getSegmentBadgeClass = (segment: string) => {
     const segmentLower = segment.toLowerCase();
@@ -55,7 +56,7 @@ const getSegmentBadgeClass = (segment: string) => {
 };
 
 const getStatusBadgeClass = (status: string) => {
-    const statusLower = status.toLowerCase();
+    const statusLower = (status || '').toLowerCase();
     if (statusLower === 'new') return 'badge-new';
     if (statusLower === 'contacted') return 'badge-contacted';
     if (statusLower.includes('demo')) return 'badge-demo';
@@ -66,10 +67,14 @@ const getStatusBadgeClass = (status: string) => {
 };
 
 export function LeadTable({ initialLeads }: LeadTableProps) {
+    const router = useRouter();
+    const searchParams = useSearchParams();
     const [isAddOpen, setIsAddOpen] = useState(false);
     const [isImportOpen, setIsImportOpen] = useState(false);
     const [editingLead, setEditingLead] = useState<Lead | null>(null);
-    const [searchQuery, setSearchQuery] = useState('');
+
+    const searchQuery = searchParams.get('q') || '';
+    const sortLabel = searchParams.get('sort') || 'newest';
 
     const leads = initialLeads || [];
 
@@ -83,10 +88,24 @@ export function LeadTable({ initialLeads }: LeadTableProps) {
         setIsAddOpen(true);
     };
 
-    const filteredLeads = leads.filter(lead =>
-        lead.lead_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        lead.company_name?.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    const updateSort = (sort: string) => {
+        const params = new URLSearchParams(searchParams.toString());
+        params.set('sort', sort);
+        router.push(`/leads?${params.toString()}`);
+    };
+
+    const filteredAndSortedLeads = leads
+        .filter(lead =>
+            lead.lead_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            lead.company_name?.toLowerCase().includes(searchQuery.toLowerCase())
+        )
+        .sort((a, b) => {
+            if (sortLabel === 'name_asc') return a.lead_name.localeCompare(b.lead_name);
+            if (sortLabel === 'score_desc') return (b.lead_score || 0) - (a.lead_score || 0);
+            if (sortLabel === 'score_asc') return (a.lead_score || 0) - (b.lead_score || 0);
+            // Default: Newest first
+            return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+        });
 
     return (
         <div className="space-y-6">
@@ -110,24 +129,46 @@ export function LeadTable({ initialLeads }: LeadTableProps) {
                 </div>
             </div>
 
-            {/* Search and Filters */}
-            <div className="flex items-center gap-2">
-                <div className="relative flex-1 max-w-md">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                        placeholder="Search company or founder..."
-                        className="pl-9 h-10"
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                    />
+            {/* Actions Bar (No search bar here now, just Filter/Sort) */}
+            <div className="flex items-center justify-between gap-2 border-b pb-4 border-border/50">
+                <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium text-muted-foreground ml-1">
+                        {filteredAndSortedLeads.length} Lead{filteredAndSortedLeads.length !== 1 ? 's' : ''}
+                    </span>
+                    {searchQuery && (
+                        <Badge variant="secondary" className="bg-primary/5 text-primary border-primary/10">
+                            Search: {searchQuery}
+                        </Badge>
+                    )}
                 </div>
-                <Button variant="outline" size="icon" className="h-10 w-10 touch-target">
-                    <Filter className="h-4 w-4" />
-                </Button>
+
+                <div className="flex items-center gap-2">
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="outline" size="sm" className="h-9 gap-2 touch-target">
+                                <Filter className="h-4 w-4" />
+                                <span>Sort: {sortLabel.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}</span>
+                                <ChevronDown className="h-4 w-4 opacity-50" />
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-48">
+                            <DropdownMenuLabel>Sort Options</DropdownMenuLabel>
+                            <DropdownMenuItem onClick={() => updateSort('newest')}>
+                                <Clock className="mr-2 h-4 w-4" /> Newest First
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => updateSort('score_desc')}>
+                                <TrendingUp className="mr-2 h-4 w-4" /> Score (High to Low)
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => updateSort('name_asc')}>
+                                <ArrowUp className="mr-2 h-4 w-4" /> Name (A-Z)
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                </div>
             </div>
 
             {/* Empty State */}
-            {filteredLeads.length === 0 && !searchQuery && (
+            {filteredAndSortedLeads.length === 0 && !searchQuery && (
                 <EmptyState
                     icon={Inbox}
                     title="No leads yet"
@@ -140,7 +181,7 @@ export function LeadTable({ initialLeads }: LeadTableProps) {
             )}
 
             {/* Search Empty State */}
-            {filteredLeads.length === 0 && searchQuery && (
+            {filteredAndSortedLeads.length === 0 && searchQuery && (
                 <EmptyState
                     icon={Search}
                     title="No results found"
@@ -149,16 +190,16 @@ export function LeadTable({ initialLeads }: LeadTableProps) {
             )}
 
             {/* Mobile Card View */}
-            {filteredLeads.length > 0 && (
+            {filteredAndSortedLeads.length > 0 && (
                 <div className="md:hidden space-y-3">
-                    {filteredLeads.map((lead) => (
+                    {filteredAndSortedLeads.map((lead) => (
                         <LeadCard key={lead.id} lead={lead} />
                     ))}
                 </div>
             )}
 
             {/* Desktop Table View */}
-            {filteredLeads.length > 0 && (
+            {filteredAndSortedLeads.length > 0 && (
                 <div className="hidden md:block rounded-xl border border-border/50 bg-card shadow-sm overflow-hidden">
                     <Table>
                         <TableHeader className="bg-muted/30">
@@ -173,7 +214,7 @@ export function LeadTable({ initialLeads }: LeadTableProps) {
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {filteredLeads.map((lead) => (
+                            {filteredAndSortedLeads.map((lead) => (
                                 <TableRow key={lead.id} className="group transition-colors">
                                     <TableCell>
                                         <div className="flex flex-col">

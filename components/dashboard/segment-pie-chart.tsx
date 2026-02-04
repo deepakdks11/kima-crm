@@ -51,8 +51,11 @@ export function SegmentPieChart({ data }: SegmentPieChartProps) {
                         backgroundColor: 'hsl(var(--card))',
                         borderColor: 'hsl(var(--border))',
                         borderRadius: '12px',
-                        fontSize: '12px'
+                        fontSize: '12px',
+                        boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)'
                     }}
+                    itemStyle={{ color: 'hsl(var(--foreground))' }}
+                    labelStyle={{ color: 'hsl(var(--foreground))', fontWeight: 'bold' }}
                 />
                 <Legend
                     verticalAlign="bottom"

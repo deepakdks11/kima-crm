@@ -9,7 +9,8 @@ import {
     Edit,
     ArrowRightLeft,
     Plus,
-    Activity as ActivityIcon
+    Activity as ActivityIcon,
+    MessageSquare
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -23,12 +24,14 @@ interface ActivityLog {
 
 interface ActivityLogListProps {
     leadId: string;
+    filterAction?: string; // Optional filter
 }
 
 const ACTION_ICONS: Record<string, any> = {
     'CREATED': Plus,
     'UPDATED': Edit,
     'STATUS_CHANGE': ArrowRightLeft,
+    'NOTE': MessageSquare,
     'DEFAULT': FileText,
 };
 
@@ -36,21 +39,27 @@ const ACTION_COLORS: Record<string, string> = {
     'CREATED': 'bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20',
     'UPDATED': 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20',
     'STATUS_CHANGE': 'bg-violet-500/10 text-violet-600 dark:text-violet-400 border-violet-500/20',
+    'NOTE': 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20',
     'DEFAULT': 'bg-gray-500/10 text-gray-600 dark:text-gray-400 border-gray-500/20',
 };
 
-export function ActivityLogList({ leadId }: ActivityLogListProps) {
+export function ActivityLogList({ leadId, filterAction }: ActivityLogListProps) {
     const [logs, setLogs] = useState<ActivityLog[]>([]);
     const [loading, setLoading] = useState(true);
     const supabase = createClient();
 
     useEffect(() => {
         async function fetchLogs() {
-            const { data, error } = await supabase
+            let query = supabase
                 .from('activity_logs')
                 .select('*')
-                .eq('lead_id', leadId)
-                .order('created_at', { ascending: false });
+                .eq('lead_id', leadId);
+
+            if (filterAction) {
+                query = query.eq('action', filterAction);
+            }
+
+            const { data, error } = await query.order('created_at', { ascending: false });
 
             if (error) {
                 console.error('Error fetching logs:', error);
@@ -61,7 +70,7 @@ export function ActivityLogList({ leadId }: ActivityLogListProps) {
         }
 
         fetchLogs();
-    }, [leadId, supabase]);
+    }, [leadId, filterAction, supabase]);
 
     if (loading) {
         return (
@@ -143,6 +152,7 @@ function formatAction(action: string) {
         case 'NOTE_ADDED': return 'Note Added';
         case 'EMAIL_SENT': return 'Email Sent';
         case 'CALL_LOGGED': return 'Call Logged';
+        case 'NOTE': return 'Internal Note';
         default: return action.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
     }
 }
@@ -152,6 +162,11 @@ function formatDetails(details: unknown) {
     if (typeof details === 'string') return details;
 
     if (typeof details === 'object' && details !== null) {
+        // Special handling for notes
+        if ('content' in details && typeof (details as any).content === 'string') {
+            return <p className="whitespace-pre-wrap">{(details as any).content}</p>;
+        }
+
         const entries = Object.entries(details as Record<string, unknown>);
         if (entries.length > 0) {
             const firstVal = entries[0][1];

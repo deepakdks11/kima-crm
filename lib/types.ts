@@ -49,3 +49,33 @@ export interface ActivityLog {
     action: string;
     details: Record<string, unknown>; // JSON
 }
+
+export interface TeamMember {
+    id: string;
+    user_id: string | null;
+    name: string;
+    email: string;
+    role: 'Owner' | 'Admin' | 'Member';
+    invited_by: string | null;
+    invited_at: string;
+    accepted_at: string | null;
+    created_at: string;
+}
+
+export interface UserProfile {
+    id: string;
+    first_name: string | null;
+    last_name: string | null;
+    bio: string | null;
+    avatar_url: string | null;
+    updated_at: string;
+}
+
+export interface UserPreferences {
+    user_id: string;
+    email_notifications: boolean;
+    followup_reminders: boolean;
+    deal_stage_changes: boolean;
+    new_lead_assignments: boolean;
+    weekly_summary: boolean;
+}

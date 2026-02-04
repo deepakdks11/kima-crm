@@ -23,10 +23,22 @@ import {
     CheckCircle2,
     Building2,
     User as UserIcon,
-    MapPin
+    MapPin,
+    Plus,
+    Loader2,
+    XCircle
 } from "lucide-react";
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
+import { LeadForm } from '@/components/leads/lead-form';
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+    DialogFooter,
+} from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
 
 const getSegmentBadgeClass = (segment: string) => {
     const segmentLower = segment.toLowerCase();
@@ -55,6 +67,10 @@ export default function LeadProfilePage({ params }: { params: Promise<{ id: stri
     const supabase = createClient();
     const [lead, setLead] = useState<Lead | null>(null);
     const [loading, setLoading] = useState(true);
+    const [editDialogOpen, setEditDialogOpen] = useState(false);
+    const [noteDialogOpen, setNoteDialogOpen] = useState(false);
+    const [noteContent, setNoteContent] = useState('');
+    const [isSavingNote, setIsSavingNote] = useState(false);
 
     useEffect(() => {
         async function fetchLead() {
@@ -103,6 +119,110 @@ export default function LeadProfilePage({ params }: { params: Promise<{ id: stri
         );
     }
 
+    const handleSaveNote = async () => {
+        if (!noteContent.trim() || !lead) return;
+        setIsSavingNote(true);
+        try {
+            const { data: { user } } = await supabase.auth.getUser();
+            const { error: noteError } = await supabase.from('activity_logs').insert([{
+                lead_id: lead.id,
+                user_id: user?.id,
+                action: 'NOTE',
+                details: { content: noteContent.trim() }
+            }]);
+
+            if (noteError) throw noteError;
+
+            setNoteContent('');
+            setNoteDialogOpen(false);
+            const { data } = await supabase.from('leads').select('*').eq('id', lead.id).single();
+            if (data) setLead(data);
+        } catch (error) {
+            console.error('Error saving note:', error);
+            alert('Failed to save note');
+        } finally {
+            setIsSavingNote(false);
+        }
+    };
+
+    const handleCompleteFollowup = async () => {
+        if (!lead) return;
+        try {
+            const { data: { user } } = await supabase.auth.getUser();
+
+            // Mark as contacted if currently new
+            const newStatus = lead.status === 'New' ? 'Contacted' : lead.status;
+
+            const { error: updateError } = await supabase
+                .from('leads')
+                .update({
+                    next_followup_date: null,
+                    last_contact_date: new Date().toISOString(),
+                    status: newStatus
+                })
+                .eq('id', lead.id);
+
+            if (updateError) throw updateError;
+
+            // Log activity
+            await supabase.from('activity_logs').insert([{
+                lead_id: lead.id,
+                user_id: user?.id,
+                action: 'FOLLOWUP_COMPLETED',
+                details: {
+                    message: 'Follow-up call completed',
+                    previous_status: lead.status,
+                    new_status: newStatus
+                }
+            }]);
+
+            // Refresh data
+            const { data } = await supabase.from('leads').select('*').eq('id', lead.id).single();
+            if (data) setLead(data);
+        } catch (error) {
+            console.error('Error completing follow-up:', error);
+            alert('Failed to complete follow-up');
+        }
+    };
+
+    const handleRescheduleFollowup = () => {
+        setEditDialogOpen(true);
+        // UX improvement: The date field will be visible in the edit form
+    };
+
+    const handleCancelFollowup = async () => {
+        if (!lead) return;
+        try {
+            const { data: { user } } = await supabase.auth.getUser();
+
+            const { error: updateError } = await supabase
+                .from('leads')
+                .update({
+                    next_followup_date: null
+                })
+                .eq('id', lead.id);
+
+            if (updateError) throw updateError;
+
+            // Log activity
+            await supabase.from('activity_logs').insert([{
+                lead_id: lead.id,
+                user_id: user?.id,
+                action: 'FOLLOWUP_CANCELLED',
+                details: {
+                    message: 'Follow-up call cancelled'
+                }
+            }]);
+
+            // Refresh data
+            const { data } = await supabase.from('leads').select('*').eq('id', lead.id).single();
+            if (data) setLead(data);
+        } catch (error) {
+            console.error('Error cancelling follow-up:', error);
+            alert('Failed to cancel follow-up');
+        }
+    };
+
     return (
         <div className="space-y-6 max-w-6xl mx-auto">
             {/* Header */}
@@ -141,12 +261,12 @@ export default function LeadProfilePage({ params }: { params: Promise<{ id: stri
                     </div>
                 </div>
                 <div className="flex gap-2">
-                    <Button variant="outline" size="sm" className="touch-target">
+                    <Button variant="outline" size="sm" className="touch-target" onClick={() => setNoteDialogOpen(true)}>
                         <MessageSquare className="h-4 w-4 mr-2" />
                         <span className="hidden sm:inline">Add Note</span>
                         <span className="sm:hidden">Note</span>
                     </Button>
-                    <Button size="sm" className="touch-target">
+                    <Button size="sm" className="touch-target" onClick={() => setEditDialogOpen(true)}>
                         <Edit className="h-4 w-4 mr-2" />
                         <span className="hidden sm:inline">Edit Lead</span>
                         <span className="sm:hidden">Edit</span>
@@ -257,18 +377,14 @@ export default function LeadProfilePage({ params }: { params: Promise<{ id: stri
                                     <CardTitle>Notes & Comments</CardTitle>
                                     <CardDescription>Add context and track conversations</CardDescription>
                                 </div>
-                                <Button size="sm">
+                                <Button size="sm" onClick={() => setNoteDialogOpen(true)}>
                                     <MessageSquare className="h-4 w-4 mr-2" />
                                     New Note
                                 </Button>
                             </div>
                         </CardHeader>
                         <CardContent>
-                            <div className="text-center py-12 text-muted-foreground">
-                                <MessageSquare className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                                <p className="font-medium">No notes yet</p>
-                                <p className="text-sm">Add your first note to track conversations and context.</p>
-                            </div>
+                            <ActivityLogList leadId={lead.id} filterAction="NOTE" />
                         </CardContent>
                     </Card>
                 </TabsContent>
@@ -302,7 +418,7 @@ export default function LeadProfilePage({ params }: { params: Promise<{ id: stri
                                     <CardTitle>Scheduled Follow-ups</CardTitle>
                                     <CardDescription>Manage upcoming touchpoints</CardDescription>
                                 </div>
-                                <Button size="sm">
+                                <Button size="sm" onClick={handleRescheduleFollowup}>
                                     <Calendar className="h-4 w-4 mr-2" />
                                     Schedule
                                 </Button>
@@ -324,12 +440,31 @@ export default function LeadProfilePage({ params }: { params: Promise<{ id: stri
                                         </p>
                                     </div>
                                     <div className="flex gap-2">
-                                        <Button variant="outline" size="sm" className="touch-target">
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            className="touch-target"
+                                            onClick={handleCompleteFollowup}
+                                        >
                                             <CheckCircle2 className="h-4 w-4 mr-2" />
                                             Complete
                                         </Button>
-                                        <Button variant="ghost" size="sm" className="touch-target">
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            className="touch-target"
+                                            onClick={handleRescheduleFollowup}
+                                        >
                                             Reschedule
+                                        </Button>
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            className="touch-target text-destructive hover:text-destructive hover:bg-destructive/10"
+                                            onClick={handleCancelFollowup}
+                                        >
+                                            <XCircle className="h-4 w-4 mr-2" />
+                                            Cancel
                                         </Button>
                                     </div>
                                 </div>
@@ -338,7 +473,7 @@ export default function LeadProfilePage({ params }: { params: Promise<{ id: stri
                                     <Calendar className="h-12 w-12 mx-auto mb-3 opacity-50" />
                                     <p className="font-medium">No follow-ups scheduled</p>
                                     <p className="text-sm mb-4">Stay on top of your pipeline by scheduling your next touchpoint.</p>
-                                    <Button size="sm">
+                                    <Button size="sm" onClick={handleRescheduleFollowup}>
                                         <Calendar className="h-4 w-4 mr-2" />
                                         Schedule Follow-up
                                     </Button>
@@ -348,6 +483,44 @@ export default function LeadProfilePage({ params }: { params: Promise<{ id: stri
                     </Card>
                 </TabsContent>
             </Tabs>
+
+            {/* Dialogs */}
+            <LeadForm
+                open={editDialogOpen}
+                onOpenChange={(open) => {
+                    setEditDialogOpen(open);
+                    if (!open) {
+                        // Refresh lead data after editing
+                        supabase.from('leads').select('*').eq('id', lead.id).single().then(({ data }) => {
+                            if (data) setLead(data);
+                        });
+                    }
+                }}
+                lead={lead}
+            />
+
+            <Dialog open={noteDialogOpen} onOpenChange={setNoteDialogOpen}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Add Internal Note</DialogTitle>
+                    </DialogHeader>
+                    <div className="py-4">
+                        <Textarea
+                            placeholder="Type your note here..."
+                            value={noteContent}
+                            onChange={(e) => setNoteContent(e.target.value)}
+                            className="min-h-[150px]"
+                        />
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setNoteDialogOpen(false)}>Cancel</Button>
+                        <Button onClick={handleSaveNote} disabled={isSavingNote || !noteContent.trim()}>
+                            {isSavingNote ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Plus className="mr-2 h-4 w-4" />}
+                            Save Note
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }

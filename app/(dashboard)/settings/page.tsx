@@ -155,22 +155,30 @@ export default function SettingsPage() {
     };
 
     const inviteTeamMember = async (name: string, email: string, role: string) => {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) throw new Error('No user found');
+        try {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) throw new Error('You must be logged in to invite team members');
 
-        const { error } = await supabase
-            .from('team_members')
-            .insert({
-                name,
-                email,
-                role,
-                invited_by: user.id
-            });
+            const { error } = await supabase
+                .from('team_members')
+                .insert({
+                    name,
+                    email,
+                    role,
+                    invited_by: user.id
+                });
 
-        if (error) throw error;
+            if (error) {
+                console.error('Supabase error inviting member:', error);
+                throw new Error(error.message || 'Database error occurred');
+            }
 
-        // Refresh team members list
-        await fetchTeamMembers();
+            // Refresh team members list
+            await fetchTeamMembers();
+        } catch (error) {
+            console.error('Error in inviteTeamMember:', error);
+            throw error;
+        }
     };
 
     const removeTeamMember = async (id: string) => {

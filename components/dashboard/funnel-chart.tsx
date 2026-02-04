@@ -26,8 +26,16 @@ export function FunnelChart({ data }: FunnelChartProps) {
                     tickFormatter={(value) => `${value}`}
                 />
                 <Tooltip
-                    cursor={{ fill: '#f3f4f6' }}
-                    contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                    cursor={{ fill: 'hsl(var(--muted)/0.1)' }}
+                    contentStyle={{
+                        backgroundColor: 'hsl(var(--card))',
+                        borderColor: 'hsl(var(--border))',
+                        borderRadius: '12px',
+                        fontSize: '12px',
+                        boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)'
+                    }}
+                    itemStyle={{ color: 'hsl(var(--foreground))' }}
+                    labelStyle={{ color: 'hsl(var(--foreground))', fontWeight: 'bold' }}
                 />
                 <Bar dataKey="value" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={40} />
             </BarChart>

@@ -27,7 +27,17 @@ export function SourceChart({ data }: SourceChartProps) {
                         <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                     ))}
                 </Pie>
-                <Tooltip />
+                <Tooltip
+                    contentStyle={{
+                        backgroundColor: 'hsl(var(--card))',
+                        borderColor: 'hsl(var(--border))',
+                        borderRadius: '12px',
+                        fontSize: '12px',
+                        color: 'hsl(var(--foreground))',
+                        boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)'
+                    }}
+                    itemStyle={{ color: 'hsl(var(--foreground))' }}
+                />
                 <Legend verticalAlign="bottom" height={36} />
             </PieChart>
         </ResponsiveContainer>

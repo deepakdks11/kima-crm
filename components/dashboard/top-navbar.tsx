@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Search, Plus, Menu } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -14,13 +14,27 @@ import {
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import Link from 'next/link';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 interface TopNavbarProps {
     onMenuClick?: () => void;
 }
 
 export function TopNavbar({ onMenuClick }: TopNavbarProps) {
-    const [searchQuery, setSearchQuery] = useState('');
+    const router = useRouter();
+    const searchParams = useSearchParams();
+    const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
+
+    const handleSearch = (e: React.FormEvent) => {
+        e.preventDefault();
+        const params = new URLSearchParams(searchParams.toString());
+        if (searchQuery) {
+            params.set('q', searchQuery);
+        } else {
+            params.delete('q');
+        }
+        router.push(`/leads?${params.toString()}`);
+    };
 
     return (
         <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -48,7 +62,7 @@ export function TopNavbar({ onMenuClick }: TopNavbarProps) {
 
                 {/* Global Search */}
                 <div className="flex-1 max-w-md">
-                    <div className="relative">
+                    <form onSubmit={handleSearch} className="relative">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                         <Input
                             type="search"
@@ -57,7 +71,7 @@ export function TopNavbar({ onMenuClick }: TopNavbarProps) {
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                         />
-                    </div>
+                    </form>
                 </div>
 
                 {/* Right Actions */}
