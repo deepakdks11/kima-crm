@@ -82,38 +82,51 @@ export function CreateWorkspaceDialog({ open, onOpenChange }: CreateWorkspaceDia
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-[425px]">
+            <DialogContent className="sm:max-w-[425px] rounded-xl border-border/50 bg-background/95 backdrop-blur-xl shadow-2xl">
                 <form onSubmit={onSubmit}>
-                    <DialogHeader>
-                        <DialogTitle>Create Workspace</DialogTitle>
-                        <DialogDescription>
-                            Give your new workspace a name. You can invite your team later.
+                    <DialogHeader className="space-y-3">
+                        <DialogTitle className="text-2xl font-bold bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-transparent">
+                            Create Workspace
+                        </DialogTitle>
+                        <DialogDescription className="text-base">
+                            Give your new workspace a name. You can invite your team later to collaborate.
                         </DialogDescription>
                     </DialogHeader>
-                    <div className="grid gap-4 py-4">
+                    <div className="grid gap-6 py-6 font-primary">
                         <div className="grid gap-2">
-                            <Label htmlFor="name">Workspace Name</Label>
+                            <Label htmlFor="name" className="text-sm font-semibold px-1">
+                                Workspace Name
+                            </Label>
                             <Input
                                 id="name"
                                 value={name}
                                 onChange={(e) => setName(e.target.value)}
-                                placeholder="e.g. Acme Corp"
+                                placeholder="e.g. Kima Marketing"
+                                className="h-11 px-4 text-base bg-muted/30 border-border/50 focus:ring-primary focus:border-primary transition-all duration-200"
                                 required
                                 autoFocus
                             />
                         </div>
                     </div>
-                    <DialogFooter>
+                    <DialogFooter className="gap-2 sm:gap-0">
                         <Button
                             type="button"
-                            variant="outline"
+                            variant="ghost"
                             onClick={() => onOpenChange(false)}
+                            className="hover:bg-muted"
                         >
                             Cancel
                         </Button>
-                        <Button type="submit" disabled={isLoading || !name.trim()}>
-                            {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                            Create Workspace
+                        <Button
+                            type="submit"
+                            disabled={isLoading || !name.trim()}
+                            className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold px-6 shadow-lg shadow-primary/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
+                        >
+                            {isLoading ? (
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            ) : (
+                                "Create Workspace"
+                            )}
                         </Button>
                     </DialogFooter>
                 </form>

@@ -66,6 +66,8 @@ export default function SettingsPage() {
     const [memberToDelete, setMemberToDelete] = useState<string | null>(null);
     const [deletingMember, setDeletingMember] = useState(false);
     const [generatedInviteLink, setGeneratedInviteLink] = useState<string | null>(null); // For displaying link
+    const [inviteToRevoke, setInviteToRevoke] = useState<string | null>(null);
+    const [isRevoking, setIsRevoking] = useState(false);
 
     // Preferences state
     const [preferences, setPreferences] = useState<UserPreferences>({
@@ -254,6 +256,7 @@ export default function SettingsPage() {
             await fetchTeamData();
             setDeleteDialogOpen(false);
             setMemberToDelete(null);
+            setInviteToRevoke(null);
         } catch (error) {
             console.error('Error removing member:', error);
             alert('Failed to remove member');
@@ -528,9 +531,13 @@ export default function SettingsPage() {
                                                         <Button
                                                             variant="ghost"
                                                             size="sm"
-                                                            onClick={() => removeTeamMember(invite.id, 'invite')}
+                                                            onClick={() => {
+                                                                setInviteToRevoke(invite.id);
+                                                                setDeleteDialogOpen(true);
+                                                            }}
                                                         >
                                                             <Trash2 className="h-4 w-4 text-destructive" />
+                                                            <span className="ml-2 text-xs font-medium text-destructive">Revoke</span>
                                                         </Button>
                                                     </div>
                                                 </div>
@@ -720,9 +727,15 @@ export default function SettingsPage() {
             <DeleteConfirmationDialog
                 open={deleteDialogOpen}
                 onOpenChange={setDeleteDialogOpen}
-                onConfirm={() => memberToDelete && removeTeamMember(memberToDelete, 'member')}
-                title="Remove Team Member"
-                description="Are you sure you want to remove this team member? This action cannot be undone."
+                onConfirm={() => {
+                    if (memberToDelete) removeTeamMember(memberToDelete, 'member');
+                    if (inviteToRevoke) removeTeamMember(inviteToRevoke, 'invite');
+                }}
+                title={inviteToRevoke ? "Revoke Invitation" : "Remove Team Member"}
+                description={inviteToRevoke
+                    ? "Are you sure you want to revoke this invitation? The link will no longer work."
+                    : "Are you sure you want to remove this team member? This action cannot be undone."
+                }
                 isLoading={deletingMember}
             />
         </div>
