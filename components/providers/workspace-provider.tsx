@@ -49,11 +49,13 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
 
                 if (lastActive) {
                     setWorkspaceState(lastActive);
+                    document.cookie = `kima_active_workspace_id=${lastActive.id}; path=/; max-age=31536000; SameSite=Lax`;
                 } else if (fetchedWorkspaces.length > 0) {
                     // Default to first one
                     const defaultWs = fetchedWorkspaces[0];
                     setWorkspaceState(defaultWs);
                     localStorage.setItem('kima_active_workspace_id', defaultWs.id);
+                    document.cookie = `kima_active_workspace_id=${defaultWs.id}; path=/; max-age=31536000; SameSite=Lax`;
                 }
             }
         } catch (error) {
@@ -70,6 +72,7 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
     const setWorkspace = (newWorkspace: Workspace) => {
         setWorkspaceState(newWorkspace);
         localStorage.setItem('kima_active_workspace_id', newWorkspace.id);
+        document.cookie = `kima_active_workspace_id=${newWorkspace.id}; path=/; max-age=31536000; SameSite=Lax`;
         // Optional: Trigger a router refresh or soft reload to ensure data revalidation
         router.refresh();
     };

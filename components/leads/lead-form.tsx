@@ -24,6 +24,7 @@ import {
 import { Lead, LeadSegment, LeadSubSegment, LeadProductFit, LeadStatus, LeadSource } from '@/lib/types';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import { ActivityLogList } from '@/components/activity/activity-log-list';
+import { useWorkspace } from '@/components/providers/workspace-provider';
 
 interface LeadFormProps {
     open: boolean;
@@ -42,6 +43,7 @@ function toLocalISOString(dateStr: string | null): string {
 export function LeadForm({ open, onOpenChange, lead }: LeadFormProps) {
     const router = useRouter();
     const supabase = createClient();
+    const { workspace } = useWorkspace();
     const [loading, setLoading] = useState(false);
     const [showMarketing, setShowMarketing] = useState(false);
 
@@ -166,6 +168,7 @@ export function LeadForm({ open, onOpenChange, lead }: LeadFormProps) {
                 utm_campaign: formData.utm_campaign || null,
                 utm_content: formData.utm_content || null,
                 notes: formData.notes || null,
+                workspace_id: workspace?.id,
             };
 
             let error;

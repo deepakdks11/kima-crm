@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { useRouter } from 'next/navigation';
+import { useWorkspace } from '@/components/providers/workspace-provider';
 
 interface CSVImporterProps {
     open: boolean;
@@ -21,6 +22,7 @@ interface CSVImporterProps {
 export function CSVImporter({ open, onOpenChange }: CSVImporterProps) {
     const router = useRouter();
     const supabase = createClient();
+    const { workspace } = useWorkspace();
     const [uploading, setUploading] = useState(false);
     const [summary, setSummary] = useState<string | null>(null);
 
@@ -59,7 +61,8 @@ export function CSVImporter({ open, onOpenChange }: CSVImporterProps) {
                         sub_segment: row.SubSegment || row.sub_segment || null,
                         status: 'New', // Default
                         source: 'Cold Outreach', // Default for import
-                        created_at: new Date().toISOString()
+                        created_at: new Date().toISOString(),
+                        workspace_id: workspace?.id
                     })).filter(l => l.lead_name && l.lead_name !== 'Unknown'); // Valid leads only
 
                     setSummary(`Uploading ${leads.length} leads...`);
