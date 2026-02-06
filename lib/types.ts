@@ -39,6 +39,44 @@ export interface Lead {
     next_followup_date: string | null;
     notes: string | null;
     updated_at: string | null;
+
+    // Multi-tenancy
+    workspace_id?: string;
+    board_id?: string;
+}
+
+export interface Workspace {
+    id: string;
+    name: string;
+    slug: string;
+    owner_id: string;
+    created_at: string;
+}
+
+export interface WorkspaceMember {
+    workspace_id: string;
+    user_id: string;
+    role: 'owner' | 'admin' | 'member';
+    joined_at: string;
+}
+
+export interface Board {
+    id: string;
+    workspace_id: string;
+    name: string;
+    description: string | null;
+    is_active: boolean;
+    created_at: string;
+}
+
+export interface Invitation {
+    id: string;
+    email: string;
+    workspace_id: string;
+    role: 'owner' | 'admin' | 'member';
+    token: string;
+    expires_at: string;
+    created_at: string;
 }
 
 export interface ActivityLog {

@@ -21,8 +21,11 @@ import {
     Save,
     Trash2,
     Plus,
-    Loader2
+    Loader2,
+    Copy,
+    Clock
 } from 'lucide-react';
+import { useWorkspace } from '@/components/providers/workspace-provider';
 
 interface TeamMember {
     id: string;
@@ -51,13 +54,18 @@ export default function SettingsPage() {
     const [profileLoading, setProfileLoading] = useState(true);
     const [profileSaving, setProfileSaving] = useState(false);
 
+    // Workspace context
+    const { workspace, isLoading: workspaceLoading } = useWorkspace();
+
     // Team state
-    const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
+    const [teamMembers, setTeamMembers] = useState<any[]>([]);
+    const [invitations, setInvitations] = useState<any[]>([]); // New state for pending invites
     const [teamLoading, setTeamLoading] = useState(true);
     const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [memberToDelete, setMemberToDelete] = useState<string | null>(null);
     const [deletingMember, setDeletingMember] = useState(false);
+    const [generatedInviteLink, setGeneratedInviteLink] = useState<string | null>(null); // For displaying link
 
     // Preferences state
     const [preferences, setPreferences] = useState<UserPreferences>({
@@ -75,10 +83,12 @@ export default function SettingsPage() {
         fetchProfile();
     }, []);
 
-    // Fetch team members on mount
+    // Fetch team members when workspace changes
     useEffect(() => {
-        fetchTeamMembers();
-    }, []);
+        if (workspace?.id) {
+            fetchTeamData();
+        }
+    }, [workspace?.id]);
 
     // Fetch preferences on mount
     useEffect(() => {
@@ -138,66 +148,109 @@ export default function SettingsPage() {
         }
     };
 
-    const fetchTeamMembers = async () => {
+    const fetchTeamData = async () => {
+        if (!workspace?.id) return;
+        setTeamLoading(true);
         try {
-            const { data, error } = await supabase
-                .from('team_members')
+            // Fetch Members
+            const { data: members, error: membersError } = await supabase
+                .from('workspace_members')
+                .select(`
+                    *,
+                    user:user_id (
+                        email,
+                        user_metadata
+                    )
+                `)
+                .eq('workspace_id', workspace.id)
+                .order('role', { ascending: true }); // Owner first
+
+            if (membersError) throw membersError;
+
+            // Fetch Pending Invitations
+            const { data: invites, error: invitesError } = await supabase
+                .from('invitations')
                 .select('*')
+                .eq('workspace_id', workspace.id)
                 .order('created_at', { ascending: false });
 
-            if (error) throw error;
-            setTeamMembers(data || []);
+            if (invitesError) throw invitesError;
+
+            // Map members to easier format
+            const formattedMembers = members?.map(m => ({
+                id: m.id,
+                user_id: m.user_id,
+                name: m.user?.user_metadata?.full_name || m.user?.email?.split('@')[0] || 'Unknown',
+                email: m.user?.email,
+                role: m.role.charAt(0).toUpperCase() + m.role.slice(1),
+                joined_at: m.joined_at,
+                type: 'member'
+            })) || [];
+
+            setTeamMembers(formattedMembers);
+            setInvitations(invites || []);
+
         } catch (error) {
-            console.error('Error fetching team members:', error);
+            console.error('Error fetching team data:', error);
         } finally {
             setTeamLoading(false);
         }
     };
 
     const inviteTeamMember = async (name: string, email: string, role: string) => {
+        if (!workspace?.id) return;
+
         try {
-            const { data: { user } } = await supabase.auth.getUser();
-            if (!user) throw new Error('You must be logged in to invite team members');
+            const token = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
 
             const { error } = await supabase
-                .from('team_members')
+                .from('invitations')
                 .insert({
-                    name,
+                    workspace_id: workspace.id,
                     email,
-                    role,
-                    invited_by: user.id
+                    role: role.toLowerCase(),
+                    token: token,
+                    expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString() // 7 days
                 });
 
-            if (error) {
-                console.error('Supabase error inviting member:', error);
-                throw new Error(error.message || 'Database error occurred');
-            }
+            if (error) throw error;
 
-            // Refresh team members list
-            await fetchTeamMembers();
+            // In a real app, you'd send an email here via Edge Function.
+            // For now, we'll just simulate success and maybe show the link.
+            const inviteLink = `${window.location.origin}/invite/${token}`;
+            setGeneratedInviteLink(inviteLink);
+
+            await fetchTeamData();
         } catch (error) {
-            console.error('Error in inviteTeamMember:', error);
+            console.error('Error inviting member:', error);
             throw error;
         }
     };
 
-    const removeTeamMember = async (id: string) => {
+
+    const removeTeamMember = async (id: string, type: 'member' | 'invite') => {
         setDeletingMember(true);
         try {
-            const { error } = await supabase
-                .from('team_members')
-                .delete()
-                .eq('id', id);
+            if (type === 'member') {
+                const { error } = await supabase
+                    .from('workspace_members')
+                    .delete()
+                    .eq('id', id);
+                if (error) throw error;
+            } else {
+                const { error } = await supabase
+                    .from('invitations')
+                    .delete()
+                    .eq('id', id);
+                if (error) throw error;
+            }
 
-            if (error) throw error;
-
-            // Refresh team members list
-            await fetchTeamMembers();
+            await fetchTeamData();
             setDeleteDialogOpen(false);
             setMemberToDelete(null);
         } catch (error) {
-            console.error('Error removing team member:', error);
-            alert('Failed to remove team member');
+            console.error('Error removing member:', error);
+            alert('Failed to remove member');
         } finally {
             setDeletingMember(false);
         }
@@ -391,46 +444,93 @@ export default function SettingsPage() {
                                 Invite Team Member
                             </Button>
 
+                            {generatedInviteLink && (
+                                <div className="p-4 bg-muted/50 rounded-lg border flex items-center justify-between gap-4">
+                                    <div className="flex-1 overflow-hidden">
+                                        <p className="text-sm font-medium mb-1">Invite Link Generated</p>
+                                        <p className="text-xs text-muted-foreground truncate">{generatedInviteLink}</p>
+                                    </div>
+                                    <Button variant="outline" size="sm" className="gap-2" onClick={() => navigator.clipboard.writeText(generatedInviteLink)}>
+                                        <Copy className="h-4 w-4" />
+                                        Copy Link
+                                    </Button>
+                                </div>
+                            )}
+
                             {teamLoading ? (
                                 <div className="flex items-center justify-center py-8">
                                     <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
                                 </div>
-                            ) : teamMembers.length === 0 ? (
+                            ) : teamMembers.length === 0 && invitations.length === 0 ? (
                                 <div className="text-center py-8 text-muted-foreground">
                                     <Users className="h-12 w-12 mx-auto mb-2 opacity-50" />
                                     <p>No team members yet</p>
                                     <p className="text-sm">Invite your first team member to get started</p>
                                 </div>
                             ) : (
-                                <div className="space-y-3">
-                                    {teamMembers.map((member) => (
-                                        <div key={member.id} className="flex items-center justify-between p-4 border rounded-lg">
-                                            <div className="flex items-center gap-3">
-                                                <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-                                                    <User className="h-5 w-5 text-primary" />
+                                <div className="space-y-6">
+                                    {/* Active Members */}
+                                    <div className="space-y-3">
+                                        <h3 className="text-sm font-medium text-muted-foreground">Active Members</h3>
+                                        {teamMembers.map((member) => (
+                                            <div key={member.id} className="flex items-center justify-between p-4 border rounded-lg bg-card">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                                                        <User className="h-5 w-5 text-primary" />
+                                                    </div>
+                                                    <div>
+                                                        <p className="font-medium">{member.name}</p>
+                                                        <p className="text-sm text-muted-foreground">{member.email}</p>
+                                                    </div>
                                                 </div>
-                                                <div>
-                                                    <p className="font-medium">{member.name}</p>
-                                                    <p className="text-sm text-muted-foreground">{member.email}</p>
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-sm text-muted-foreground px-2 py-1 bg-secondary rounded-md">{member.role}</span>
+                                                    {member.role !== 'Owner' && (
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            onClick={() => {
+                                                                setMemberToDelete(member.id);
+                                                                setDeleteDialogOpen(true);
+                                                            }}
+                                                        >
+                                                            <Trash2 className="h-4 w-4 text-destructive" />
+                                                        </Button>
+                                                    )}
                                                 </div>
                                             </div>
-                                            <div className="flex items-center gap-2">
-                                                <span className="text-sm text-muted-foreground">{member.role}</span>
-                                                {member.role !== 'Owner' && (
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="sm"
-                                                        onClick={() => {
-                                                            setMemberToDelete(member.id);
-                                                            setDeleteDialogOpen(true);
-                                                        }}
-                                                    >
-                                                        <Trash2 className="h-4 w-4 text-destructive" />
-                                                    </Button>
-                                                )}
-                                            </div>
+                                        ))}
+                                    </div>
+
+                                    {/* Pending Invitations */}
+                                    {invitations.length > 0 && (
+                                        <div className="space-y-3">
+                                            <h3 className="text-sm font-medium text-muted-foreground">Pending Invitations</h3>
+                                            {invitations.map((invite) => (
+                                                <div key={invite.id} className="flex items-center justify-between p-4 border rounded-lg bg-muted/30">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center">
+                                                            <Clock className="h-5 w-5 text-muted-foreground" />
+                                                        </div>
+                                                        <div>
+                                                            <p className="font-medium">{invite.email}</p>
+                                                            <p className="text-xs text-muted-foreground">Expires: {new Date(invite.expires_at).toLocaleDateString()}</p>
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="text-sm text-muted-foreground px-2 py-1 bg-secondary rounded-md capitalize">{invite.role} (Pending)</span>
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            onClick={() => removeTeamMember(invite.id, 'invite')}
+                                                        >
+                                                            <Trash2 className="h-4 w-4 text-destructive" />
+                                                        </Button>
+                                                    </div>
+                                                </div>
+                                            ))}
                                         </div>
-                                    ))}
+                                    )}
                                 </div>
                             )}
                         </CardContent>
@@ -614,7 +714,7 @@ export default function SettingsPage() {
             <DeleteConfirmationDialog
                 open={deleteDialogOpen}
                 onOpenChange={setDeleteDialogOpen}
-                onConfirm={() => memberToDelete && removeTeamMember(memberToDelete)}
+                onConfirm={() => memberToDelete && removeTeamMember(memberToDelete, 'member')}
                 title="Remove Team Member"
                 description="Are you sure you want to remove this team member? This action cannot be undone."
                 isLoading={deletingMember}

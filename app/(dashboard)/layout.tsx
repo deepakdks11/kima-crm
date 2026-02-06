@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, Suspense } from 'react';
 import { Sidebar } from '@/components/dashboard/sidebar';
 import { TopNavbar } from '@/components/dashboard/top-navbar';
 import { MobileNav } from '@/components/dashboard/mobile-nav';
@@ -23,7 +23,9 @@ export default function DashboardLayout({
             {/* Main Content Area */}
             <div className="flex-1 flex flex-col overflow-hidden">
                 {/* Top Navbar - all devices */}
-                <TopNavbar onMenuClick={() => setMobileNavOpen(true)} />
+                <Suspense fallback={<div className="h-16 border-b bg-background/95" />}>
+                    <TopNavbar onMenuClick={() => setMobileNavOpen(true)} />
+                </Suspense>
 
                 {/* Scrollable Page Content */}
                 <main className="flex-1 overflow-y-auto container-padding py-6 lg:py-8">

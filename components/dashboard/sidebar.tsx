@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ModeToggle } from '@/components/mode-toggle';
+import { WorkspaceSwitcher } from '@/components/dashboard/workspace-switcher';
 
 const navigation = [
     { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
@@ -45,6 +46,11 @@ export function Sidebar() {
                         <span className="text-primary">Kima</span>CRM
                     </span>
                 </Link>
+            </div>
+
+            {/* Workspace Switcher */}
+            <div className="px-4 py-4 border-b border-border/50">
+                <WorkspaceSwitcher className="w-full" />
             </div>
 
             {/* Navigation */}

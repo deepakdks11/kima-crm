@@ -30,9 +30,12 @@ export default function DashboardPage() {
     });
     const [pipelineData, setPipelineData] = useState<{ name: string; value: number }[]>([]);
     const [segmentData, setSegmentData] = useState<{ name: string; value: number }[]>([]);
+    const [lastUpdated, setLastUpdated] = useState<string>('');
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
+        setLastUpdated(format(new Date(), 'MMM d, yyyy • HH:mm:ss'));
+
         async function fetchDashboardData() {
             try {
                 const { data: leads, error } = await supabase
@@ -197,7 +200,7 @@ export default function DashboardPage() {
 
             {/* Footer Timestamp */}
             <div className="text-xs text-center text-muted-foreground/50 py-2">
-                Last updated: {format(new Date(), 'MMM d, yyyy • HH:mm:ss')}
+                Last updated: {lastUpdated || 'Loading...'}
             </div>
         </div>
     );

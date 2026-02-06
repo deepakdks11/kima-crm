@@ -66,6 +66,17 @@ const getStatusBadgeClass = (status: string) => {
     return '';
 };
 
+interface StatusCounts {
+    new: number;
+    contacted: number;
+    demo: number;
+    negotiation: number;
+}
+
+interface LeadTableProps {
+    initialLeads: Lead[];
+}
+
 export function LeadTable({ initialLeads }: LeadTableProps) {
     const router = useRouter();
     const searchParams = useSearchParams();

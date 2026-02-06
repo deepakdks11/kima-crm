@@ -20,6 +20,7 @@ import {
     SheetHeader,
     SheetTitle,
 } from '@/components/ui/sheet';
+import { WorkspaceSwitcher } from '@/components/dashboard/workspace-switcher';
 
 const navigation = [
     { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
@@ -58,6 +59,11 @@ export function MobileNav({ open, onOpenChange }: MobileNavProps) {
                             </span>
                         </SheetTitle>
                     </SheetHeader>
+
+                    {/* Workspace Switcher */}
+                    <div className="px-6 py-4 border-b border-border/50">
+                        <WorkspaceSwitcher className="w-full" />
+                    </div>
 
                     {/* Navigation */}
                     <div className="flex-1 overflow-y-auto py-6 px-3">
