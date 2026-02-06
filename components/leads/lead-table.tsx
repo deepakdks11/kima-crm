@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Lead } from '@/lib/types';
+import { createClient } from '@/lib/supabase/client';
 import {
     Table,
     TableBody,
@@ -32,6 +33,7 @@ import { LeadForm } from '@/components/leads/lead-form';
 import { CSVImporter } from '@/components/leads/csv-importer';
 import { LeadCard } from '@/components/leads/lead-card';
 import { EmptyState } from '@/components/ui/empty-state';
+import { DeleteConfirmationDialog } from '@/components/settings/delete-confirmation-dialog';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -80,6 +82,7 @@ interface LeadTableProps {
 export function LeadTable({ initialLeads }: LeadTableProps) {
     const router = useRouter();
     const searchParams = useSearchParams();
+    const supabase = createClient();
     const [isAddOpen, setIsAddOpen] = useState(false);
     const [isImportOpen, setIsImportOpen] = useState(false);
     const [editingLead, setEditingLead] = useState<Lead | null>(null);
@@ -97,6 +100,31 @@ export function LeadTable({ initialLeads }: LeadTableProps) {
     const handleAdd = () => {
         setEditingLead(null);
         setIsAddOpen(true);
+    };
+
+    const [leadToDelete, setLeadToDelete] = useState<Lead | null>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
+
+    const handleDelete = async () => {
+        if (!leadToDelete) return;
+
+        setIsDeleting(true);
+        try {
+            const { error } = await supabase
+                .from('leads')
+                .delete()
+                .eq('id', leadToDelete.id);
+
+            if (error) throw error;
+
+            setLeadToDelete(null);
+            router.refresh();
+        } catch (error) {
+            console.error('Error deleting lead:', error);
+            alert('Failed to delete lead. You may not have permission.');
+        } finally {
+            setIsDeleting(false);
+        }
     };
 
     const updateSort = (sort: string) => {
@@ -287,7 +315,10 @@ export function LeadTable({ initialLeads }: LeadTableProps) {
                                                         <ExternalLink className="mr-2 h-4 w-4" /> Go to Profile
                                                     </DropdownMenuItem>
                                                 </Link>
-                                                <DropdownMenuItem className="text-destructive focus:text-destructive">
+                                                <DropdownMenuItem
+                                                    className="text-destructive focus:text-destructive cursor-pointer"
+                                                    onClick={() => setLeadToDelete(lead)}
+                                                >
                                                     <Trash2 className="mr-2 h-4 w-4" /> Delete Lead
                                                 </DropdownMenuItem>
                                             </DropdownMenuContent>
@@ -309,6 +340,15 @@ export function LeadTable({ initialLeads }: LeadTableProps) {
                 lead={editingLead}
             />
             <CSVImporter open={isImportOpen} onOpenChange={setIsImportOpen} />
+
+            <DeleteConfirmationDialog
+                open={!!leadToDelete}
+                onOpenChange={(open) => !open && setLeadToDelete(null)}
+                onConfirm={handleDelete}
+                title="Delete Lead"
+                description={`Are you sure you want to delete ${leadToDelete?.lead_name}? This will permanently remove all their data.`}
+                isLoading={isDeleting}
+            />
         </div>
     );
 }

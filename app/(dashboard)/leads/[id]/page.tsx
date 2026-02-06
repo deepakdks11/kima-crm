@@ -26,7 +26,8 @@ import {
     MapPin,
     Plus,
     Loader2,
-    XCircle
+    XCircle,
+    Trash2
 } from "lucide-react";
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
@@ -39,6 +40,8 @@ import {
     DialogFooter,
 } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
+import { DeleteConfirmationDialog } from '@/components/settings/delete-confirmation-dialog';
+import { useRouter } from 'next/navigation';
 
 const getSegmentBadgeClass = (segment: string) => {
     const segmentLower = segment.toLowerCase();
@@ -65,12 +68,34 @@ const getStatusBadgeClass = (status: string) => {
 export default function LeadProfilePage({ params }: { params: Promise<{ id: string }> }) {
     const resolvedParams = use(params);
     const supabase = createClient();
+    const router = useRouter();
     const [lead, setLead] = useState<Lead | null>(null);
     const [loading, setLoading] = useState(true);
     const [editDialogOpen, setEditDialogOpen] = useState(false);
     const [noteDialogOpen, setNoteDialogOpen] = useState(false);
+    const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+    const [isDeleting, setIsDeleting] = useState(false);
     const [noteContent, setNoteContent] = useState('');
     const [isSavingNote, setIsSavingNote] = useState(false);
+
+    const handleDelete = async () => {
+        if (!lead) return;
+        setIsDeleting(true);
+        try {
+            const { error } = await supabase
+                .from('leads')
+                .delete()
+                .eq('id', lead.id);
+
+            if (error) throw error;
+            router.push('/leads');
+        } catch (error) {
+            console.error('Error deleting lead:', error);
+            alert('Failed to delete lead');
+        } finally {
+            setIsDeleting(false);
+        }
+    };
 
     useEffect(() => {
         async function fetchLead() {
@@ -266,10 +291,13 @@ export default function LeadProfilePage({ params }: { params: Promise<{ id: stri
                         <span className="hidden sm:inline">Add Note</span>
                         <span className="sm:hidden">Note</span>
                     </Button>
-                    <Button size="sm" className="touch-target" onClick={() => setEditDialogOpen(true)}>
+                    <Button variant="outline" size="sm" className="touch-target" onClick={() => setEditDialogOpen(true)}>
                         <Edit className="h-4 w-4 mr-2" />
                         <span className="hidden sm:inline">Edit Lead</span>
                         <span className="sm:hidden">Edit</span>
+                    </Button>
+                    <Button variant="outline" size="sm" className="touch-target text-destructive hover:text-destructive hover:bg-destructive/10" onClick={() => setDeleteDialogOpen(true)}>
+                        <Trash2 className="h-4 w-4" />
                     </Button>
                 </div>
             </div>
@@ -521,6 +549,15 @@ export default function LeadProfilePage({ params }: { params: Promise<{ id: stri
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
+
+            <DeleteConfirmationDialog
+                open={deleteDialogOpen}
+                onOpenChange={setDeleteDialogOpen}
+                onConfirm={handleDelete}
+                title="Delete Lead"
+                description={`Are you sure you want to delete ${lead.company_name || lead.lead_name}? This will permanently remove all their data.`}
+                isLoading={isDeleting}
+            />
         </div>
     );
 }
