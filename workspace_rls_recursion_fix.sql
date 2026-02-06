@@ -1,8 +1,12 @@
--- 1. Create a security definer function to check workspace membership
--- This avoids recursion because it bypasses RLS for the internal query
-CREATE OR REPLACE FUNCTION check_workspace_membership(ws_id UUID)
+-- FINAL ROBUST FIX FOR RLS RECURSION
+-- This script cleans up and uses a SECURITY DEFINER function to bypass recursion.
+
+-- 1. Create the membership checking function
+CREATE OR REPLACE FUNCTION public.is_member_of_workspace(ws_id UUID)
 RETURNS BOOLEAN AS $$
 BEGIN
+    -- This inner query bypasses RLS because the function is SECURITY DEFINER
+    -- and executed as the owner (postgres).
     RETURN EXISTS (
         SELECT 1 FROM public.workspace_members
         WHERE workspace_id = ws_id
@@ -11,59 +15,44 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
--- 2. Update workspace_members policies
-DROP POLICY IF EXISTS "Users can view members of their workspaces" ON workspace_members;
-CREATE POLICY "Users can view members of their workspaces"
-ON workspace_members FOR SELECT
-TO authenticated
-USING (
-    user_id = auth.uid() OR check_workspace_membership(workspace_id)
-);
+-- 2. Drop all conflicting policies on relevant tables
+DROP POLICY IF EXISTS "Users can view members of their workspaces" ON public.workspace_members;
+DROP POLICY IF EXISTS "Users can only view leads in their workspaces" ON public.leads;
+DROP POLICY IF EXISTS "Users can only insert leads into their workspaces" ON public.leads;
+DROP POLICY IF EXISTS "Users can only update leads in their workspaces" ON public.leads;
+DROP POLICY IF EXISTS "Users can only delete leads in their workspaces" ON public.leads;
+DROP POLICY IF EXISTS "Users can view workspaces they are members of" ON public.workspaces;
 
--- 3. Update leads policies to use the function
-DROP POLICY IF EXISTS "Users can only view leads in their workspaces" ON leads;
-CREATE POLICY "Users can only view leads in their workspaces"
-ON leads FOR SELECT
-TO authenticated
-USING (
-    check_workspace_membership(workspace_id)
-);
+-- 3. Apply non-recursive policies for workspace_members
+-- A user can always see their own membership
+CREATE POLICY "members_read_own" ON public.workspace_members
+    FOR SELECT TO authenticated USING (auth.uid() = user_id);
 
-DROP POLICY IF EXISTS "Users can only insert leads into their workspaces" ON leads;
-CREATE POLICY "Users can only insert leads into their workspaces"
-ON leads FOR INSERT
-TO authenticated
-WITH CHECK (
-    check_workspace_membership(workspace_id)
-);
+-- A user can see others in the same workspace using the function
+CREATE POLICY "members_read_others" ON public.workspace_members
+    FOR SELECT TO authenticated USING (is_member_of_workspace(workspace_id));
 
-DROP POLICY IF EXISTS "Users can only update leads in their workspaces" ON leads;
-CREATE POLICY "Users can only update leads in their workspaces"
-ON leads FOR UPDATE
-TO authenticated
-USING (
-    check_workspace_membership(workspace_id)
-)
-WITH CHECK (
-    check_workspace_membership(workspace_id)
-);
+-- 4. Apply policies for workspaces
+CREATE POLICY "workspaces_read" ON public.workspaces
+    FOR SELECT TO authenticated USING (is_member_of_workspace(id));
 
-DROP POLICY IF EXISTS "Users can only delete leads in their workspaces" ON leads;
-CREATE POLICY "Users can only delete leads in their workspaces"
-ON leads FOR DELETE
-TO authenticated
-USING (
-    check_workspace_membership(workspace_id)
-);
+-- 5. Apply policies for leads
+CREATE POLICY "leads_read" ON public.leads
+    FOR SELECT TO authenticated USING (is_member_of_workspace(workspace_id));
 
--- 4. Update workspaces policy
-DROP POLICY IF EXISTS "Users can view workspaces they are members of" ON workspaces;
-CREATE POLICY "Users can view workspaces they are members of"
-ON workspaces FOR SELECT
-TO authenticated
-USING (
-    check_workspace_membership(id)
-);
+CREATE POLICY "leads_insert" ON public.leads
+    FOR INSERT TO authenticated WITH CHECK (is_member_of_workspace(workspace_id));
 
--- 5. Grant permissions
-GRANT EXECUTE ON FUNCTION check_workspace_membership TO authenticated;
+CREATE POLICY "leads_update" ON public.leads
+    FOR UPDATE TO authenticated USING (is_member_of_workspace(workspace_id));
+
+CREATE POLICY "leads_delete" ON public.leads
+    FOR DELETE TO authenticated USING (is_member_of_workspace(workspace_id));
+
+-- 6. Ensure RLS is enabled
+ALTER TABLE public.workspaces ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.workspace_members ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.leads ENABLE ROW LEVEL SECURITY;
+
+-- 7. Grant permission
+GRANT EXECUTE ON FUNCTION public.is_member_of_workspace TO authenticated;

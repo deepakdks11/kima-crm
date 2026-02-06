@@ -217,7 +217,13 @@ export default function SettingsPage() {
 
             // In a real app, you'd send an email here via Edge Function.
             // For now, we'll just simulate success and maybe show the link.
-            const inviteLink = `${window.location.origin}/invite/${token}`;
+            // Use production URL for invites, especially if generating from localhost
+            const baseUrl = typeof window !== 'undefined' &&
+                (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+                ? 'https://kima-crm.vercel.app'
+                : window.location.origin;
+
+            const inviteLink = `${baseUrl}/invite/${token}`;
             setGeneratedInviteLink(inviteLink);
 
             await fetchTeamData();
