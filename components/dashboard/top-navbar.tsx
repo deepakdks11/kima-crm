@@ -15,6 +15,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { createClient } from '@/lib/supabase/client';
 
 interface TopNavbarProps {
     onMenuClick?: () => void;
@@ -22,8 +23,18 @@ interface TopNavbarProps {
 
 export function TopNavbar({ onMenuClick }: TopNavbarProps) {
     const router = useRouter();
+    const supabase = createClient();
     const searchParams = useSearchParams();
     const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
+
+    const handleSignOut = async () => {
+        const { error } = await supabase.auth.signOut();
+        if (error) {
+            console.error('Error signing out:', error);
+        } else {
+            router.push('/login');
+        }
+    };
 
     const handleSearch = (e: React.FormEvent) => {
         e.preventDefault();
@@ -118,7 +129,10 @@ export function TopNavbar({ onMenuClick }: TopNavbarProps) {
                                 <Link href="/docs">Help Center</Link>
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />
-                            <DropdownMenuItem className="text-destructive">
+                            <DropdownMenuItem
+                                className="text-destructive cursor-pointer"
+                                onClick={handleSignOut}
+                            >
                                 Sign Out
                             </DropdownMenuItem>
                         </DropdownMenuContent>
