@@ -8,7 +8,18 @@ import {
     ToastProvider,
     ToastTitle,
     ToastViewport,
+    type ToastProps,
+    type ToastActionElement,
 } from "@/components/ui/toast"
+
+export type ToasterProps = {
+    toasts: (ToastProps & {
+        id: string
+        title?: React.ReactNode
+        description?: React.ReactNode
+        action?: ToastActionElement
+    })[]
+}
 
 export function Toaster() {
     const { toasts } = useToast()
