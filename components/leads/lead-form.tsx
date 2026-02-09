@@ -25,6 +25,7 @@ import { Lead, LeadSegment, LeadSubSegment, LeadProductFit, LeadStatus, LeadSour
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import { ActivityLogList } from '@/components/activity/activity-log-list';
 import { useWorkspace } from '@/components/providers/workspace-provider';
+import { useToast } from '@/components/ui/use-toast';
 
 interface LeadFormProps {
     open: boolean;
@@ -44,6 +45,7 @@ export function LeadForm({ open, onOpenChange, lead }: LeadFormProps) {
     const router = useRouter();
     const supabase = createClient();
     const { workspace } = useWorkspace();
+    const { toast } = useToast();
     const [loading, setLoading] = useState(false);
     const [showMarketing, setShowMarketing] = useState(false);
 
@@ -178,6 +180,16 @@ export function LeadForm({ open, onOpenChange, lead }: LeadFormProps) {
                 custom_data: formData.custom_data || {},
             };
 
+            if (!workspace?.id) {
+                toast({
+                    title: "No workspace selected",
+                    description: "Please select or create a workspace before saving a lead.",
+                    variant: "destructive",
+                });
+                setLoading(false);
+                return;
+            }
+
             let error;
             let resultData;
 
@@ -218,11 +230,20 @@ export function LeadForm({ open, onOpenChange, lead }: LeadFormProps) {
 
             if (error) throw error;
 
+            toast({
+                title: lead ? "Lead updated" : "Lead created",
+                description: `Successfully ${lead ? 'updated' : 'created'} lead "${formData.lead_name}"`,
+            });
+
             onOpenChange(false);
             router.refresh();
-        } catch (error) {
+        } catch (error: any) {
             console.error('Error saving lead:', error);
-            alert('Failed to save lead');
+            toast({
+                title: "Error saving lead",
+                description: error.message || "Failed to save lead. Please try again.",
+                variant: "destructive",
+            });
         } finally {
             setLoading(false);
         }

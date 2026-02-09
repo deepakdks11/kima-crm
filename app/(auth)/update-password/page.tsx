@@ -6,29 +6,40 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { AlertCircle, Zap, Loader2, CheckCircle2, ArrowLeft } from 'lucide-react';
-import Link from 'next/link';
+import { AlertCircle, Zap, Loader2, CheckCircle2 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 
-export default function ForgotPasswordPage() {
+export default function UpdatePasswordPage() {
     const supabase = createClient();
-    const [email, setEmail] = useState('');
+    const router = useRouter();
+    const [password, setPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState(false);
 
-    const handleReset = async (e: React.FormEvent) => {
+    const handleUpdate = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
         setError(null);
 
+        if (password !== confirmPassword) {
+            setError('Passwords do not match');
+            setLoading(false);
+            return;
+        }
+
         try {
-            const { error } = await supabase.auth.resetPasswordForEmail(email, {
-                redirectTo: `${window.location.origin}/auth/callback?next=/update-password`,
+            const { error } = await supabase.auth.updateUser({
+                password: password
             });
 
             if (error) throw error;
 
             setSuccess(true);
+            setTimeout(() => {
+                router.push('/dashboard');
+            }, 2000);
         } catch (err: unknown) {
             setError(err instanceof Error ? err.message : 'An unknown error occurred');
         } finally {
@@ -38,14 +49,12 @@ export default function ForgotPasswordPage() {
 
     return (
         <div className="min-h-screen w-full flex items-center justify-center bg-background relative overflow-hidden">
-            {/* Background Decorative Elements */}
             <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none z-0">
                 <div className="absolute -top-[25%] -left-[10%] w-[50%] h-[50%] rounded-full bg-primary/5 blur-[120px]" />
                 <div className="absolute -bottom-[25%] -right-[10%] w-[50%] h-[50%] rounded-full bg-primary/10 blur-[120px]" />
             </div>
 
             <div className="w-full max-w-[400px] px-4 relative z-10">
-                {/* Logo Header */}
                 <div className="flex flex-col items-center gap-6 mb-8 text-center">
                     <div className="w-16 h-16 rounded-2xl bg-primary flex items-center justify-center shadow-2xl shadow-primary/20">
                         <Zap className="h-10 w-10 text-primary-foreground fill-current" />
@@ -54,8 +63,8 @@ export default function ForgotPasswordPage() {
 
                 <Card className="border-border/50 shadow-2xl shadow-primary/5 backdrop-blur-sm bg-card/80">
                     <CardHeader className="space-y-1 pb-4">
-                        <CardTitle className="text-xl font-bold">Reset Password</CardTitle>
-                        <CardDescription>Enter your email to receive recovery instructions</CardDescription>
+                        <CardTitle className="text-xl font-bold">Update Password</CardTitle>
+                        <CardDescription>Enter your new password below</CardDescription>
                     </CardHeader>
                     <CardContent>
                         {success ? (
@@ -64,30 +73,38 @@ export default function ForgotPasswordPage() {
                                     <CheckCircle2 className="h-6 w-6 text-green-600 dark:text-green-400" />
                                 </div>
                                 <div className="space-y-2">
-                                    <h3 className="font-semibold text-lg">Check your email</h3>
+                                    <h3 className="font-semibold text-lg">Password Updated</h3>
                                     <p className="text-sm text-muted-foreground">
-                                        We sent a password reset link to <span className="font-medium text-foreground">{email}</span>.
+                                        Your password has been changed successfully. Redirecting you to the dashboard...
                                     </p>
                                 </div>
-                                <Button variant="outline" className="w-full mt-2" asChild>
-                                    <Link href="/login">
-                                        <ArrowLeft className="mr-2 h-4 w-4" />
-                                        Back to Login
-                                    </Link>
-                                </Button>
                             </div>
                         ) : (
-                            <form onSubmit={handleReset} className="space-y-4">
+                            <form onSubmit={handleUpdate} className="space-y-4">
                                 <div className="space-y-2">
-                                    <Label htmlFor="email">Email</Label>
+                                    <Label htmlFor="password">New Password</Label>
                                     <Input
-                                        id="email"
-                                        type="email"
-                                        placeholder="name@company.com"
-                                        value={email}
-                                        onChange={(e) => setEmail(e.target.value)}
+                                        id="password"
+                                        type="password"
+                                        placeholder="••••••••"
+                                        value={password}
+                                        onChange={(e) => setPassword(e.target.value)}
                                         className="bg-background"
                                         required
+                                        minLength={6}
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="confirmPassword">Confirm Password</Label>
+                                    <Input
+                                        id="confirmPassword"
+                                        type="password"
+                                        placeholder="••••••••"
+                                        value={confirmPassword}
+                                        onChange={(e) => setConfirmPassword(e.target.value)}
+                                        className="bg-background"
+                                        required
+                                        minLength={6}
                                     />
                                 </div>
 
@@ -103,14 +120,9 @@ export default function ForgotPasswordPage() {
                                         {loading ? (
                                             <>
                                                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                                Sending Link...
+                                                Updating...
                                             </>
-                                        ) : 'Send Reset Link'}
-                                    </Button>
-                                    <Button variant="ghost" className="w-full" size="sm" asChild>
-                                        <Link href="/login">
-                                            Back to Login
-                                        </Link>
+                                        ) : 'Update Password'}
                                     </Button>
                                 </div>
                             </form>

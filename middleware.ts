@@ -66,7 +66,7 @@ export async function middleware(request: NextRequest) {
 
     // 2. If user is NOT logged in and trying to access protected routes, redirect to login
     // Protected routes are everything NOT in the public paths list
-    const publicPaths = ['/login', '/signup', '/forgot-password', '/auth/callback', '/invite']
+    const publicPaths = ['/login', '/signup', '/forgot-password', '/auth/callback', '/invite', '/update-password']
     const isPublicPath = publicPaths.some(path => request.nextUrl.pathname.startsWith(path))
 
     if (!user && !isPublicPath && request.nextUrl.pathname !== '/') {
