@@ -1,6 +1,6 @@
 
 export type LeadSegment = 'Web2' | 'Web3';
-export type LeadSubSegment = 'Exporter' | 'Freelancer' | 'Agency' | 'Wallet' | 'dApp' | 'Payments Infra';
+export type LeadSubSegment = 'Exporter' | 'Freelancer' | 'Agency' | 'Wallet' | 'dApp' | 'Payments Infra' | 'On-Ramp' | 'Off-Ramp' | 'Both On-Off Ramp';
 export type LeadProductFit = 'Trustodi' | 'Kima' | 'Both';
 export type LeadStatus = 'New' | 'Contacted' | 'Demo Scheduled' | 'Negotiation' | 'Onboarded' | 'Lost';
 export type LeadSource = 'LinkedIn' | 'Referral' | 'Website' | 'Cold Outreach' | 'Facebook Ads' | 'Instagram Ads' | 'Google Ads';
@@ -39,10 +39,20 @@ export interface Lead {
     next_followup_date: string | null;
     notes: string | null;
     updated_at: string | null;
+    custom_data?: Record<string, any>; // JSONB
 
     // Multi-tenancy
     workspace_id?: string;
     board_id?: string;
+}
+
+export interface FormField {
+    id: string;
+    label: string;
+    type: 'text' | 'number' | 'date' | 'select' | 'textarea';
+    required: boolean;
+    options?: string[]; // For select type
+    placeholder?: string;
 }
 
 export interface Workspace {
@@ -51,6 +61,7 @@ export interface Workspace {
     slug: string;
     owner_id: string;
     created_at: string;
+    form_schema?: FormField[]; // JSONB
 }
 
 export interface WorkspaceMember {

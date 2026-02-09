@@ -16,6 +16,8 @@ import {
 import { cn } from '@/lib/utils';
 import { ModeToggle } from '@/components/mode-toggle';
 import { WorkspaceSwitcher } from '@/components/dashboard/workspace-switcher';
+import { createClient } from '@/lib/supabase/client';
+import { useEffect, useState } from 'react';
 
 const navigation = [
     { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
@@ -33,6 +35,20 @@ const secondaryNavigation = [
 
 export function Sidebar() {
     const pathname = usePathname();
+    const [user, setUser] = useState<{ email: string | undefined, initials: string } | null>(null);
+
+    useEffect(() => {
+        const getUser = async () => {
+            const supabase = createClient();
+            const { data: { user } } = await supabase.auth.getUser();
+            if (user) {
+                const email = user.email || '';
+                const initials = email.substring(0, 2).toUpperCase();
+                setUser({ email, initials });
+            }
+        };
+        getUser();
+    }, []);
 
     return (
         <div className="hidden lg:flex h-full w-64 flex-col border-r bg-card">
@@ -116,11 +132,17 @@ export function Sidebar() {
                 <div className="flex items-center justify-between gap-2 px-2">
                     <div className="flex items-center gap-2">
                         <div className="h-8 w-8 rounded-full bg-gradient-to-br from-primary/40 to-violet-500/40 flex items-center justify-center">
-                            <span className="text-xs font-bold text-primary-foreground">A</span>
+                            <span className="text-xs font-bold text-primary-foreground">
+                                {user ? user.initials : 'G'}
+                            </span>
                         </div>
                         <div className="flex flex-col">
-                            <span className="text-xs font-bold truncate max-w-[80px]">Axel CRM</span>
-                            <span className="text-[10px] text-muted-foreground truncate max-w-[80px]">Admin</span>
+                            <span className="text-xs font-bold truncate max-w-[80px]">
+                                {user?.email?.split('@')[0] || 'Guest'}
+                            </span>
+                            <span className="text-[10px] text-muted-foreground truncate max-w-[80px]">
+                                {user ? 'Admin' : 'Viewer'}
+                            </span>
                         </div>
                     </div>
                     <ModeToggle />

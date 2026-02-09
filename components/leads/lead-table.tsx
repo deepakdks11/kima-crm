@@ -142,6 +142,8 @@ export function LeadTable({ initialLeads }: LeadTableProps) {
             if (sortLabel === 'name_asc') return a.lead_name.localeCompare(b.lead_name);
             if (sortLabel === 'score_desc') return (b.lead_score || 0) - (a.lead_score || 0);
             if (sortLabel === 'score_asc') return (a.lead_score || 0) - (b.lead_score || 0);
+            if (sortLabel === 'status_asc') return (a.status || '').localeCompare(b.status || '');
+            if (sortLabel === 'segment_asc') return (a.segment || '').localeCompare(b.segment || '');
             // Default: Newest first
             return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
         });
@@ -200,6 +202,12 @@ export function LeadTable({ initialLeads }: LeadTableProps) {
                             </DropdownMenuItem>
                             <DropdownMenuItem onClick={() => updateSort('name_asc')}>
                                 <ArrowUp className="mr-2 h-4 w-4" /> Name (A-Z)
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => updateSort('status_asc')}>
+                                <ArrowUp className="mr-2 h-4 w-4" /> Status (A-Z)
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => updateSort('segment_asc')}>
+                                <ArrowUp className="mr-2 h-4 w-4" /> Segment (Web2/Web3)
                             </DropdownMenuItem>
                         </DropdownMenuContent>
                     </DropdownMenu>

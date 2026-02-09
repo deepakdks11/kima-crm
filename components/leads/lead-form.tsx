@@ -21,7 +21,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import { Lead, LeadSegment, LeadSubSegment, LeadProductFit, LeadStatus, LeadSource } from '@/lib/types';
+import { Lead, LeadSegment, LeadSubSegment, LeadProductFit, LeadStatus, LeadSource, FormField } from '@/lib/types';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import { ActivityLogList } from '@/components/activity/activity-log-list';
 import { useWorkspace } from '@/components/providers/workspace-provider';
@@ -46,6 +46,9 @@ export function LeadForm({ open, onOpenChange, lead }: LeadFormProps) {
     const { workspace } = useWorkspace();
     const [loading, setLoading] = useState(false);
     const [showMarketing, setShowMarketing] = useState(false);
+
+    // Dynamic Fields
+    const customFields = (workspace?.form_schema as any) as FormField[] || [];
 
     // State for form fields
     const [formData, setFormData] = useState<Partial<Lead>>({
@@ -73,6 +76,7 @@ export function LeadForm({ open, onOpenChange, lead }: LeadFormProps) {
         last_contact_date: null,
         next_followup_date: null,
         notes: '',
+        custom_data: {},
     });
 
     // Load lead data if editing - simplified sync
@@ -83,6 +87,7 @@ export function LeadForm({ open, onOpenChange, lead }: LeadFormProps) {
                 // Ensure dates are in the correct format for datetime-local input if they exist
                 last_contact_date: lead.last_contact_date,
                 next_followup_date: lead.next_followup_date,
+                custom_data: lead.custom_data || {},
             });
         } else if (open && !lead) {
             // Reset form for new lead when dialog opens
@@ -110,6 +115,7 @@ export function LeadForm({ open, onOpenChange, lead }: LeadFormProps) {
                 last_contact_date: null,
                 next_followup_date: null,
                 notes: '',
+                custom_data: {},
             });
         }
     }, [open, lead]);
@@ -131,10 +137,10 @@ export function LeadForm({ open, onOpenChange, lead }: LeadFormProps) {
         const keys = Object.keys(newData) as (keyof Lead)[];
 
         keys.forEach(key => {
-            if (key === 'updated_at' || key === 'created_at' || key === 'id' || key === 'owner' || key === 'lead_score') return;
+            if (key === 'updated_at' || key === 'created_at' || key === 'id' || key === 'owner' || key === 'lead_score' || key === 'custom_data') return;
             // Simple comparison
-            const oldVal = oldData[key];
-            const newVal = newData[key];
+            const oldVal = (oldData as any)[key];
+            const newVal = (newData as any)[key];
 
             // Handle dates and nulls roughly
             if (JSON.stringify(oldVal) !== JSON.stringify(newVal)) {
@@ -169,6 +175,7 @@ export function LeadForm({ open, onOpenChange, lead }: LeadFormProps) {
                 utm_content: formData.utm_content || null,
                 notes: formData.notes || null,
                 workspace_id: workspace?.id,
+                custom_data: formData.custom_data || {},
             };
 
             let error;
@@ -324,6 +331,9 @@ export function LeadForm({ open, onOpenChange, lead }: LeadFormProps) {
                                     <SelectItem value="Wallet">Wallet</SelectItem>
                                     <SelectItem value="dApp">dApp</SelectItem>
                                     <SelectItem value="Payments Infra">Payments Infra</SelectItem>
+                                    <SelectItem value="On-Ramp">On-Ramp</SelectItem>
+                                    <SelectItem value="Off-Ramp">Off-Ramp</SelectItem>
+                                    <SelectItem value="Both On-Off Ramp">Both On-Off Ramp</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
@@ -384,6 +394,66 @@ export function LeadForm({ open, onOpenChange, lead }: LeadFormProps) {
                             />
                         </div>
                     </section>
+
+                    {/* Custom Fields */}
+                    {customFields.length > 0 && (
+                        <div className="grid grid-cols-2 gap-4 border-t pt-4">
+                            <h3 className="col-span-2 text-sm font-medium text-muted-foreground">Custom Fields</h3>
+                            {customFields.map((field) => (
+                                <div key={field.id} className="grid gap-2">
+                                    <Label htmlFor={field.id}>
+                                        {field.label} {field.required && '*'}
+                                    </Label>
+                                    {field.type === 'select' ? (
+                                        <Select
+                                            value={formData.custom_data?.[field.label] as string || ''}
+                                            onValueChange={(val) => setFormData({
+                                                ...formData,
+                                                custom_data: { ...formData.custom_data, [field.label]: val }
+                                            })}
+                                        >
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Select..." />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {field.options?.map((opt) => (
+                                                    <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                                                )) || (
+                                                        // Fallback if no options are defined (which shouldn't happen for valid select types)
+                                                        <>
+                                                            <SelectItem value="Yes">Yes</SelectItem>
+                                                            <SelectItem value="No">No</SelectItem>
+                                                        </>
+                                                    )}
+                                            </SelectContent>
+                                        </Select>
+                                    ) : field.type === 'textarea' ? (
+                                        <Textarea
+                                            id={field.id}
+                                            placeholder={field.placeholder}
+                                            value={formData.custom_data?.[field.label] as string || ''}
+                                            onChange={(e) => setFormData({
+                                                ...formData,
+                                                custom_data: { ...formData.custom_data, [field.label]: e.target.value }
+                                            })}
+                                        />
+                                    ) : (
+                                        <Input
+                                            id={field.id}
+                                            type={field.type}
+                                            placeholder={field.placeholder}
+                                            required={field.required}
+                                            value={formData.custom_data?.[field.label] as string || ''}
+                                            onChange={(e) => setFormData({
+                                                ...formData,
+                                                custom_data: { ...formData.custom_data, [field.label]: e.target.value }
+                                            })}
+                                        />
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                    )}
 
                     <hr className="border-gray-100" />
 

@@ -2,6 +2,7 @@
 
 import { useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -111,7 +112,9 @@ function LoginForm() {
                             <div className="space-y-2">
                                 <div className="flex items-center justify-between">
                                     <Label htmlFor="password">Password</Label>
-                                    <span className="text-xs text-primary hover:underline cursor-pointer font-medium">Forgot?</span>
+                                    <Link href="/forgot-password" tabIndex={-1}>
+                                        <span className="text-xs text-primary hover:underline cursor-pointer font-medium">Forgot?</span>
+                                    </Link>
                                 </div>
                                 <Input
                                     id="password"

@@ -9,6 +9,7 @@ import { SegmentPieChart } from "@/components/dashboard/segment-pie-chart";
 import { format } from "date-fns";
 import { cn } from '@/lib/utils';
 import { LucideIcon } from 'lucide-react';
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface KPICardProps {
     title: string;
@@ -33,6 +34,8 @@ export default function DashboardPage() {
     const [lastUpdated, setLastUpdated] = useState<string>('');
     const [loading, setLoading] = useState(true);
 
+    const [segmentFilter, setSegmentFilter] = useState<'all' | 'Web2' | 'Web3'>('all');
+
     useEffect(() => {
         setLastUpdated(format(new Date(), 'MMM d, yyyy • HH:mm:ss'));
 
@@ -45,10 +48,18 @@ export default function DashboardPage() {
                 if (error) throw error;
 
                 if (leads) {
-                    const total = leads.length;
-                    const web3 = leads.filter(l => l.segment === 'Web3').length;
-                    const demos = leads.filter(l => l.status === 'Demo Scheduled').length;
-                    const active = leads.filter(l => ['Negotiation', 'Demo Scheduled', 'Contacted'].includes(l.status)).length;
+                    // Apply filtering based on selected segment
+                    const filteredLeads = segmentFilter === 'all'
+                        ? leads
+                        : leads.filter(l => l.segment === segmentFilter);
+
+                    const total = filteredLeads.length;
+                    // Web3 count always shows total Web3 regardless of filter, or maybe it should show filtered?
+                    // "Web3 Segment" KPI usually implies specific count. Let's keep it as total Web3 for context, 
+                    // or if filter is Web2, it might be 0. Let's make it reflect the current dataset.
+                    const web3 = filteredLeads.filter(l => l.segment === 'Web3').length;
+                    const demos = filteredLeads.filter(l => l.status === 'Demo Scheduled').length;
+                    const active = filteredLeads.filter(l => ['Negotiation', 'Demo Scheduled', 'Contacted'].includes(l.status)).length;
 
                     setStats({
                         totalLeads: total,
@@ -61,15 +72,15 @@ export default function DashboardPage() {
                     const statuses = ['New', 'Contacted', 'Demo Scheduled', 'Negotiation', 'Onboarded', 'Lost'];
                     const pData = statuses.map(status => ({
                         name: status === 'Demo Scheduled' ? 'Demo' : status,
-                        value: leads.filter(l => l.status === status).length
+                        value: filteredLeads.filter(l => l.status === status).length
                     }));
                     setPipelineData(pData);
 
                     // Segment aggregation
-                    const uniqueSegments = Array.from(new Set(leads.map(l => l.segment || 'Other')));
+                    const uniqueSegments = Array.from(new Set(filteredLeads.map(l => l.segment || 'Other')));
                     const sData = uniqueSegments.map(seg => ({
                         name: seg,
-                        value: leads.filter(l => l.segment === seg).length
+                        value: filteredLeads.filter(l => l.segment === seg).length
                     }));
                     setSegmentData(sData);
                 }
@@ -81,7 +92,7 @@ export default function DashboardPage() {
         }
 
         fetchDashboardData();
-    }, [supabase]);
+    }, [supabase, segmentFilter]);
 
     return (
         <div className="space-y-8">
@@ -95,6 +106,17 @@ export default function DashboardPage() {
                 </p>
             </div>
 
+            {/* Dashboard Controls */}
+            <div className="flex items-center space-x-2">
+                <Tabs defaultValue="all" className="w-[400px]" onValueChange={(val) => setSegmentFilter(val as 'all' | 'Web2' | 'Web3')}>
+                    <TabsList>
+                        <TabsTrigger value="all">All Segments</TabsTrigger>
+                        <TabsTrigger value="Web2">Web2</TabsTrigger>
+                        <TabsTrigger value="Web3">Web3</TabsTrigger>
+                    </TabsList>
+                </Tabs>
+            </div>
+
             {/* KPI Cards */}
             <div className="grid gap-4 md:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
                 <KPICard
@@ -102,7 +124,7 @@ export default function DashboardPage() {
                     value={stats.totalLeads}
                     loading={loading}
                     icon={Users}
-                    description="All captured leads"
+                    description={segmentFilter === 'all' ? "All captured leads" : `${segmentFilter} leads only`}
                     trend="+12% from last month"
                     trendUp={true}
                 />

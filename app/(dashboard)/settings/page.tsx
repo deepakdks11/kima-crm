@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ModeToggle } from '@/components/mode-toggle';
 import { InviteMemberDialog } from '@/components/settings/invite-member-dialog';
 import { DeleteConfirmationDialog } from '@/components/settings/delete-confirmation-dialog';
+import { FormBuilder } from '@/components/settings/form-builder';
 import { createClient } from '@/lib/supabase/client';
 import {
     User,
@@ -349,8 +350,11 @@ export default function SettingsPage() {
                         <span className="hidden sm:inline">Appearance</span>
                     </TabsTrigger>
                     <TabsTrigger value="account" className="gap-2">
-                        <CreditCard className="h-4 w-4" />
                         <span className="hidden sm:inline">Account</span>
+                    </TabsTrigger>
+                    <TabsTrigger value="forms" className="gap-2">
+                        <Palette className="h-4 w-4" />
+                        <span className="hidden sm:inline">Forms</span>
                     </TabsTrigger>
                 </TabsList>
 
@@ -715,6 +719,12 @@ export default function SettingsPage() {
                         </CardContent>
                     </Card>
                 </TabsContent>
+
+
+                {/* Form Builder Settings */}
+                <TabsContent value="forms" className="space-y-4">
+                    <FormBuilder />
+                </TabsContent>
             </Tabs>
 
             {/* Dialogs */}
@@ -738,6 +748,6 @@ export default function SettingsPage() {
                 }
                 isLoading={deletingMember}
             />
-        </div>
+        </div >
     );
 }
