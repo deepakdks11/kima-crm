@@ -5,6 +5,7 @@ import { WorkspaceProvider } from "@/components/providers/workspace-provider";
 import { Toaster } from "@/components/ui/toaster";
 import "./globals.css";
 
+// Trigger redeploy to resolve Vercel cloning issue
 const inter = Inter({
   variable: "--font-inter",
   subsets: ["latin"],
