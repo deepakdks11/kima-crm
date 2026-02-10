@@ -47,8 +47,9 @@ export function FormBuilder() {
                     .eq('id', member.workspace_id)
                     .single();
 
-                if (workspace?.form_schema) {
-                    setFields((workspace.form_schema as any) || DEFAULT_FORM_SCHEMA);
+                const workspaceSchema = workspace?.form_schema as FormField[] | undefined;
+                if (workspaceSchema && workspaceSchema.length > 0) {
+                    setFields(workspaceSchema);
                 } else {
                     setFields(DEFAULT_FORM_SCHEMA);
                 }

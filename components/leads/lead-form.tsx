@@ -53,7 +53,8 @@ export function LeadForm({ open, onOpenChange, lead }: LeadFormProps) {
     const [showMarketing, setShowMarketing] = useState(false);
 
     // Dynamic Fields for custom data
-    const schema = (workspace?.form_schema as any) as FormField[] || DEFAULT_FORM_SCHEMA;
+    const workspaceSchema = workspace?.form_schema as FormField[] | undefined;
+    const schema = (workspaceSchema && workspaceSchema.length > 0) ? workspaceSchema : DEFAULT_FORM_SCHEMA;
     const customFields = schema.filter(f => !f.is_standard && !f.hidden);
 
     const getLabel = (fieldKey: string, defaultLabel: string) => {
