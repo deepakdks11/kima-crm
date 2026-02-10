@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import { ThemeProvider } from "@/components/theme-provider";
 import { WorkspaceProvider } from "@/components/providers/workspace-provider";
@@ -12,9 +12,23 @@ const inter = Inter({
   display: "swap",
 });
 
+export const viewport: Viewport = {
+  themeColor: "#0f172a",
+  maximumScale: 1,
+};
+
 export const metadata: Metadata = {
-  title: "Kima + Trustodi CRM",
+  title: "Kima CRM",
   description: "Advanced Lead Management & Scoring System",
+  applicationName: "Kima CRM",
+  appleWebApp: {
+    capable: true,
+    title: "Kima CRM",
+    statusBarStyle: "default",
+  },
+  formatDetection: {
+    telephone: false,
+  },
 };
 
 export default function RootLayout({
