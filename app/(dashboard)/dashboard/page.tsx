@@ -56,7 +56,7 @@ export default function DashboardPage() {
                         ? leads
                         : leads.filter(lead => {
                             if (Array.isArray(lead.segment)) {
-                                return lead.segment.includes(segmentFilter);
+                                return lead.segment.some(s => s === segmentFilter);
                             }
                             return lead.segment === segmentFilter;
                         });

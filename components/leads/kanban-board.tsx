@@ -116,8 +116,17 @@ export function KanbanBoard({ initialLeads }: KanbanBoardProps) {
                                                             {lead.company_name}
                                                         </div>
                                                         <div className="flex gap-1 flex-wrap mt-1">
-                                                            <Badge variant={lead.segment === "Web3" ? "web3" : "web2"} className="text-[10px] py-0 h-5">
-                                                                {lead.segment}
+                                                            <Badge
+                                                                variant={
+                                                                    (Array.isArray(lead.segment) && lead.segment.includes('Web3')) || lead.segment === 'Web3'
+                                                                        ? "secondary" // Changed to secondary as "web3" variant might not exist in standard Badge
+                                                                        : "outline"
+                                                                }
+                                                                className={cn("text-[10px] py-0 h-5",
+                                                                    (Array.isArray(lead.segment) && lead.segment.some(s => s.toLowerCase().includes('web3'))) ? "bg-violet-100 text-violet-800 border-violet-200" : ""
+                                                                )}
+                                                            >
+                                                                {Array.isArray(lead.segment) ? lead.segment[0] : lead.segment}
                                                             </Badge>
                                                             <Badge variant="secondary" className="text-[10px] py-0 h-5">
                                                                 {lead.source}
