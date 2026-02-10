@@ -6,7 +6,7 @@ export function calculateLeadScore(lead: Partial<Lead>): number {
 
     // Segment Rules
     // +20 if Exporter or Wallet
-    if (lead.sub_segment === 'Exporter' || lead.sub_segment === 'Wallet') {
+    if (lead.sub_segment && (lead.sub_segment.includes('Exporter') || lead.sub_segment.includes('Wallet'))) {
         score += 20;
     }
 
