@@ -2,10 +2,6 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   /* config options here */
-  // @ts-ignore
-  turbopack: {
-    // rules: {},
-  }
 };
 
 const withPWA = require("@ducanh2912/next-pwa").default({
@@ -14,7 +10,7 @@ const withPWA = require("@ducanh2912/next-pwa").default({
   aggressiveFrontEndNavCaching: true,
   reloadOnOnline: true,
   swcMinify: true,
-  disable: false, // Enable PWA in development for testing
+  disable: process.env.NODE_ENV === "development", // Only disable in dev if desired, or keep false to test
   workboxOptions: {
     disableDevLogs: true,
   },

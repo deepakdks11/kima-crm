@@ -3,7 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import { LeadTable } from '@/components/leads/lead-table';
 import { redirect } from 'next/navigation';
 
-export default async function SegmentPage({ params }: { params: { segment: string } }) {
+export default async function SegmentPage({ params }: { params: Promise<{ segment: string }> }) {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
 
@@ -11,7 +11,8 @@ export default async function SegmentPage({ params }: { params: { segment: strin
 
     // Decode segment from URL (e.g., "Web3-Wallet")
     // Helper to map URL slug to DB fields
-    const slug = params.segment;
+    const { segment } = await params;
+    const slug = segment;
     let segmentFilter: string | null = null;
     let subSegmentFilter: string | null = null;
 
