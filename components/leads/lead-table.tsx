@@ -49,7 +49,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 
 const getSegmentBadgeClass = (segment: string | string[]) => {
     // If array, use the first one or join them for classification
-    const segmentStr = Array.isArray(segment) ? segment.join(' ').toLowerCase() : segment.toLowerCase();
+    const segmentStr = Array.isArray(segment) ? segment.join(' ').toLowerCase() : (segment || '').toLowerCase();
 
     if (segmentStr.includes('export')) return 'badge-exporter';
     if (segmentStr.includes('freelance')) return 'badge-freelancer';

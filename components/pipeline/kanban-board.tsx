@@ -21,14 +21,15 @@ const STAGE_COLORS: Record<string, string> = {
     'Lost': 'bg-red-500/10 text-red-600 dark:text-red-400',
 };
 
-const getSegmentBadgeClass = (segment: string) => {
-    const segmentLower = segment.toLowerCase();
-    if (segmentLower.includes('export')) return 'badge-exporter';
-    if (segmentLower.includes('freelance')) return 'badge-freelancer';
-    if (segmentLower.includes('agency')) return 'badge-agency';
-    if (segmentLower.includes('wallet')) return 'badge-wallet';
-    if (segmentLower.includes('dapp')) return 'badge-dapp';
-    if (segmentLower.includes('payment')) return 'badge-payments';
+const getSegmentBadgeClass = (segment: string | string[]) => {
+    const segmentStr = Array.isArray(segment) ? segment.join(' ').toLowerCase() : (segment || '').toLowerCase();
+
+    if (segmentStr.includes('export')) return 'badge-exporter';
+    if (segmentStr.includes('freelance')) return 'badge-freelancer';
+    if (segmentStr.includes('agency')) return 'badge-agency';
+    if (segmentStr.includes('wallet')) return 'badge-wallet';
+    if (segmentStr.includes('dapp')) return 'badge-dapp';
+    if (segmentStr.includes('payment')) return 'badge-payments';
     return '';
 };
 
@@ -172,7 +173,7 @@ export function KanbanBoard() {
                                                                     variant="outline"
                                                                     className={cn("text-[10px] px-1.5 py-0 h-5", getSegmentBadgeClass(lead.segment))}
                                                                 >
-                                                                    {lead.segment}
+                                                                    {Array.isArray(lead.segment) ? lead.segment.join(', ') : lead.segment}
                                                                 </Badge>
                                                             )}
                                                             {lead.next_followup_date && (

@@ -118,8 +118,8 @@ export function KanbanBoard({ initialLeads }: KanbanBoardProps) {
                                                         <div className="flex gap-1 flex-wrap mt-1">
                                                             <Badge
                                                                 variant={
-                                                                    (Array.isArray(lead.segment) && lead.segment.includes('Web3')) || lead.segment === 'Web3'
-                                                                        ? "secondary" // Changed to secondary as "web3" variant might not exist in standard Badge
+                                                                    (Array.isArray(lead.segment) && lead.segment.includes('Web3'))
+                                                                        ? "secondary"
                                                                         : "outline"
                                                                 }
                                                                 className={cn("text-[10px] py-0 h-5",
