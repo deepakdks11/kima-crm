@@ -10,6 +10,7 @@ import {
     CommandList,
 } from "@/components/ui/command";
 import { Command as CommandPrimitive } from "cmdk";
+import { cn } from "@/lib/utils";
 
 interface MultiSelectProps {
     options: string[];
@@ -91,7 +92,10 @@ export function MultiSelect({
                         ref={inputRef}
                         value={inputValue}
                         onValueChange={setInputValue}
-                        onBlur={() => setOpen(false)}
+                        onBlur={() => {
+                            // Small timeout to allow onSelect to fire before closing
+                            setTimeout(() => setOpen(false), 200);
+                        }}
                         onFocus={() => setOpen(true)}
                         placeholder={placeholder}
                         className="ml-2 flex-1 bg-transparent outline-none placeholder:text-muted-foreground min-w-[120px]"
@@ -99,26 +103,42 @@ export function MultiSelect({
                 </div>
             </div>
             <div className="relative mt-2">
-                {open && selectables.length > 0 ? (
-                    <div className="absolute w-full z-50 top-0 rounded-md border bg-popover text-popover-foreground shadow-md outline-none animate-in">
-                        <CommandList>
-                            <CommandGroup className="h-full overflow-auto max-h-60">
-                                {selectables.map((option) => (
-                                    <CommandItem
-                                        key={option}
-                                        onSelect={() => {
-                                            setInputValue("");
-                                            onChange([...selected, option]);
-                                        }}
-                                        className="cursor-pointer"
-                                    >
-                                        {option}
-                                    </CommandItem>
-                                ))}
-                            </CommandGroup>
-                        </CommandList>
-                    </div>
-                ) : null}
+                <div
+                    onMouseDown={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                    }}
+                    className={cn(
+                        "absolute w-full z-50 top-0 rounded-md border bg-popover text-popover-foreground shadow-md outline-none animate-in",
+                        open ? "block" : "hidden"
+                    )}
+                >
+                    <CommandList>
+                        <CommandGroup className="h-full overflow-auto max-h-60 p-1">
+                            {selectables.length === 0 && (
+                                <div className="py-6 text-center text-sm text-muted-foreground">
+                                    No options left.
+                                </div>
+                            )}
+                            {selectables.map((option) => (
+                                <CommandItem
+                                    key={option}
+                                    onMouseDown={(e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                    }}
+                                    onSelect={() => {
+                                        setInputValue("");
+                                        onChange([...selected, option]);
+                                    }}
+                                    className="cursor-pointer"
+                                >
+                                    {option}
+                                </CommandItem>
+                            ))}
+                        </CommandGroup>
+                    </CommandList>
+                </div>
             </div>
         </Command>
     );
