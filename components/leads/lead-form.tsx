@@ -28,6 +28,7 @@ import { ActivityLogList } from '@/components/activity/activity-log-list';
 import { useWorkspace } from '@/components/providers/workspace-provider';
 import { useToast } from '@/components/ui/use-toast';
 import { cn } from '@/lib/utils';
+import { DEFAULT_FORM_SCHEMA } from '@/lib/constants';
 
 interface LeadFormProps {
     open: boolean;
@@ -52,7 +53,7 @@ export function LeadForm({ open, onOpenChange, lead }: LeadFormProps) {
     const [showMarketing, setShowMarketing] = useState(false);
 
     // Dynamic Fields for custom data
-    const schema = (workspace?.form_schema as any) as FormField[] || [];
+    const schema = (workspace?.form_schema as any) as FormField[] || DEFAULT_FORM_SCHEMA;
     const customFields = schema.filter(f => !f.is_standard && !f.hidden);
 
     const getLabel = (fieldKey: string, defaultLabel: string) => {
