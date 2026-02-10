@@ -24,7 +24,8 @@ import {
     Plus,
     Loader2,
     Copy,
-    Clock
+    Clock,
+    LayoutDashboard
 } from 'lucide-react';
 import { useWorkspace } from '@/components/providers/workspace-provider';
 
@@ -333,6 +334,10 @@ export default function SettingsPage() {
                         <User className="h-4 w-4" />
                         <span className="hidden sm:inline">Profile</span>
                     </TabsTrigger>
+                    <TabsTrigger value="forms" className="gap-2">
+                        <LayoutDashboard className="h-4 w-4" />
+                        <span className="hidden sm:inline">Forms</span>
+                    </TabsTrigger>
                     <TabsTrigger value="team" className="gap-2">
                         <Users className="h-4 w-4" />
                         <span className="hidden sm:inline">Team</span>
@@ -348,13 +353,6 @@ export default function SettingsPage() {
                     <TabsTrigger value="appearance" className="gap-2">
                         <Palette className="h-4 w-4" />
                         <span className="hidden sm:inline">Appearance</span>
-                    </TabsTrigger>
-                    <TabsTrigger value="account" className="gap-2">
-                        <span className="hidden sm:inline">Account</span>
-                    </TabsTrigger>
-                    <TabsTrigger value="forms" className="gap-2">
-                        <Palette className="h-4 w-4" />
-                        <span className="hidden sm:inline">Forms</span>
                     </TabsTrigger>
                 </TabsList>
 

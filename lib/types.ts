@@ -48,11 +48,14 @@ export interface Lead {
 
 export interface FormField {
     id: string;
+    type: 'text' | 'number' | 'date' | 'select' | 'textarea' | 'section' | 'divider';
     label: string;
-    type: 'text' | 'number' | 'date' | 'select' | 'textarea';
+    placeholder?: string;
     required: boolean;
     options?: string[]; // For select type
-    placeholder?: string;
+    field_key?: string; // Mapped DB column or custom_data key
+    is_standard?: boolean; // True if mapping to a built-in Lead column
+    hidden?: boolean;
 }
 
 export interface Workspace {
@@ -62,6 +65,7 @@ export interface Workspace {
     owner_id: string;
     created_at: string;
     form_schema?: FormField[]; // JSONB
+    brand_color?: string;
 }
 
 export interface WorkspaceMember {

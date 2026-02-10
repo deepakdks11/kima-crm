@@ -22,10 +22,11 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { Lead, LeadSegment, LeadSubSegment, LeadProductFit, LeadStatus, LeadSource, FormField } from '@/lib/types';
-import { ChevronDown, ChevronUp } from 'lucide-react';
+import { ChevronDown, ChevronUp, Loader2 } from 'lucide-react';
 import { ActivityLogList } from '@/components/activity/activity-log-list';
 import { useWorkspace } from '@/components/providers/workspace-provider';
 import { useToast } from '@/components/ui/use-toast';
+import { cn } from '@/lib/utils';
 
 interface LeadFormProps {
     open: boolean;
@@ -49,10 +50,14 @@ export function LeadForm({ open, onOpenChange, lead }: LeadFormProps) {
     const [loading, setLoading] = useState(false);
     const [showMarketing, setShowMarketing] = useState(false);
 
-    // Dynamic Fields
-    const customFields = (workspace?.form_schema as any) as FormField[] || [];
+    // Dynamic Fields for custom data
+    const schema = (workspace?.form_schema as any) as FormField[] || [];
+    const customFields = schema.filter(f => !f.is_standard && !f.hidden);
 
-    // State for form fields
+    const getLabel = (fieldKey: string, defaultLabel: string) => {
+        return schema.find(f => f.field_key === fieldKey)?.label || defaultLabel;
+    };
+
     const [formData, setFormData] = useState<Partial<Lead>>({
         lead_name: '',
         company_name: '',
@@ -74,25 +79,19 @@ export function LeadForm({ open, onOpenChange, lead }: LeadFormProps) {
         utm_medium: '',
         utm_campaign: '',
         utm_content: '',
-        // Dates need to be strings for input[type=date/datetime-local] or null
         last_contact_date: null,
         next_followup_date: null,
         notes: '',
         custom_data: {},
     });
 
-    // Load lead data if editing - simplified sync
     useEffect(() => {
         if (open && lead) {
             setFormData({
                 ...lead,
-                // Ensure dates are in the correct format for datetime-local input if they exist
-                last_contact_date: lead.last_contact_date,
-                next_followup_date: lead.next_followup_date,
                 custom_data: lead.custom_data || {},
             });
         } else if (open && !lead) {
-            // Reset form for new lead when dialog opens
             setFormData({
                 lead_name: '',
                 company_name: '',
@@ -121,7 +120,6 @@ export function LeadForm({ open, onOpenChange, lead }: LeadFormProps) {
             });
         }
     }, [open, lead]);
-
     const logActivity = async (leadId: string, action: string, details: Record<string, unknown>) => {
         try {
             await supabase.from('activity_logs').insert([{
@@ -134,27 +132,6 @@ export function LeadForm({ open, onOpenChange, lead }: LeadFormProps) {
         }
     };
 
-    const getChanges = (oldData: Lead, newData: Partial<Lead>) => {
-        const changes: Record<string, { from: unknown, to: unknown }> = {};
-        const keys = Object.keys(newData) as (keyof Lead)[];
-
-        keys.forEach(key => {
-            if (key === 'updated_at' || key === 'created_at' || key === 'id' || key === 'owner' || key === 'lead_score' || key === 'custom_data') return;
-            // Simple comparison
-            const oldVal = (oldData as any)[key];
-            const newVal = (newData as any)[key];
-
-            // Handle dates and nulls roughly
-            if (JSON.stringify(oldVal) !== JSON.stringify(newVal)) {
-                // Ignore if both are effectively null/empty
-                if (!oldVal && !newVal) return;
-                // Don't log internal format changes if the value is same date
-                changes[key] = { from: oldVal, to: newVal };
-            }
-        });
-        return changes;
-    };
-
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
@@ -162,22 +139,7 @@ export function LeadForm({ open, onOpenChange, lead }: LeadFormProps) {
         try {
             const payload = {
                 ...formData,
-                sub_segment: formData.sub_segment || null,
-                product_fit: formData.product_fit || null,
-                linkedin_url: formData.linkedin_url || null,
-                website_url: formData.website_url || null,
-                client_geography: formData.client_geography || null,
-                currency_flow: formData.currency_flow || null,
-                use_case: formData.use_case || null,
-                decision_maker_name: formData.decision_maker_name || null,
-                role: formData.role || null,
-                utm_source: formData.utm_source || null,
-                utm_medium: formData.utm_medium || null,
-                utm_campaign: formData.utm_campaign || null,
-                utm_content: formData.utm_content || null,
-                notes: formData.notes || null,
                 workspace_id: workspace?.id,
-                custom_data: formData.custom_data || {},
             };
 
             if (!workspace?.id) {
@@ -194,35 +156,22 @@ export function LeadForm({ open, onOpenChange, lead }: LeadFormProps) {
             let resultData;
 
             if (lead) {
-                // Edit mode
                 const { data, error: updateError } = await supabase
                     .from('leads')
                     .update(payload)
                     .eq('id', lead.id)
                     .select()
                     .single();
-
                 error = updateError;
                 resultData = data;
-
-                if (!error && resultData) {
-                    const changes = getChanges(lead, payload as Lead);
-                    if (Object.keys(changes).length > 0) {
-                        const action = changes.status ? 'STATUS_CHANGE' : 'UPDATED';
-                        await logActivity(lead.id, action, changes);
-                    }
-                }
             } else {
-                // Create mode
                 const { data, error: insertError } = await supabase
                     .from('leads')
                     .insert([payload])
                     .select()
                     .single();
-
                 error = insertError;
                 resultData = data;
-
                 if (!error && resultData) {
                     await logActivity(resultData.id, 'CREATED', { name: resultData.lead_name });
                 }
@@ -249,368 +198,270 @@ export function LeadForm({ open, onOpenChange, lead }: LeadFormProps) {
         }
     };
 
+    const handleChange = (field: FormField, value: any) => {
+        if (field.is_standard && field.field_key) {
+            setFormData(prev => ({ ...prev, [field.field_key!]: value }));
+        } else {
+            const key = field.field_key || field.label;
+            setFormData(prev => ({
+                ...prev,
+                custom_data: {
+                    ...(prev.custom_data || {}),
+                    [key]: value
+                }
+            }));
+        }
+    };
+
+    const getValue = (field: FormField) => {
+        if (field.is_standard && field.field_key) {
+            return (formData as any)[field.field_key] || '';
+        }
+        const key = field.field_key || field.label;
+        return formData.custom_data?.[key] || '';
+    };
+
+    const renderField = (field: FormField) => {
+        if (field.hidden) return null;
+
+        // Heuristic for column spans in a 6-column grid
+        let colSpan = "col-span-3"; // Default half-width
+        if (field.type === 'section' || field.type === 'divider' || field.type === 'textarea') {
+            colSpan = "col-span-6"; // Full-width
+        } else if (['segment', 'sub_segment', 'product_fit'].includes(field.field_key || '')) {
+            colSpan = "col-span-2"; // Third-width
+        }
+
+        switch (field.type) {
+            case 'section':
+                return (
+                    <div key={field.id} className="col-span-6 pt-6 pb-2">
+                        <h3 className="text-sm font-semibold text-primary/80 uppercase tracking-wider">{field.label}</h3>
+                    </div>
+                );
+            case 'divider':
+                return <div key={field.id} className="col-span-6 py-2"><hr className="border-muted/30" /></div>;
+            case 'textarea':
+                return (
+                    <div key={field.id} className="col-span-6 grid gap-2">
+                        <Label htmlFor={field.id}>{field.label} {field.required && '*'}</Label>
+                        <Textarea
+                            id={field.id}
+                            placeholder={field.placeholder}
+                            required={field.required}
+                            value={getValue(field)}
+                            onChange={(e) => handleChange(field, e.target.value)}
+                            className="min-h-[100px] bg-background/50"
+                        />
+                    </div>
+                );
+            case 'select':
+                return (
+                    <div key={field.id} className={cn("grid gap-2", colSpan)}>
+                        <Label htmlFor={field.id}>{field.label} {field.required && '*'}</Label>
+                        <Select
+                            value={getValue(field)}
+                            onValueChange={(val) => handleChange(field, val)}
+                        >
+                            <SelectTrigger id={field.id} className="bg-background/50">
+                                <SelectValue placeholder={field.placeholder || "Select..."} />
+                            </SelectTrigger>
+                            <SelectContent className="backdrop-blur-xl bg-background/80 border-white/10 shadow-2xl">
+                                {field.options?.map((opt) => (
+                                    <SelectItem key={opt} value={opt} className="hover:bg-primary/10 transition-colors">{opt}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
+                );
+            default:
+                return (
+                    <div key={field.id} className={cn("grid gap-2", colSpan)}>
+                        <Label htmlFor={field.id}>{field.label} {field.required && '*'}</Label>
+                        <Input
+                            id={field.id}
+                            type={field.type}
+                            placeholder={field.placeholder}
+                            required={field.required}
+                            value={getValue(field)}
+                            onChange={(e) => handleChange(field, e.target.value)}
+                            className="bg-background/50"
+                        />
+                    </div>
+                );
+        }
+    };
+
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
-                <DialogHeader>
-                    <DialogTitle>{lead ? 'Edit Lead' : 'Add New Lead'}</DialogTitle>
+            <DialogContent className="sm:max-w-[800px] max-h-[90vh] flex flex-col p-0 border-white/10 bg-background/95 backdrop-blur-xl shadow-2xl overflow-hidden">
+                <DialogHeader className="px-8 pt-8 pb-4 shrink-0">
+                    <DialogTitle className="text-2xl font-bold tracking-tight">{lead ? 'Edit' : 'Add'} Lead</DialogTitle>
                 </DialogHeader>
 
-                <form onSubmit={handleSubmit} className="grid gap-6 py-4">
+                <form id="lead-form-id" onSubmit={handleSubmit} className="flex-1 overflow-y-auto px-8 pb-8 custom-scrollbar">
+                    <div className="grid grid-cols-6 gap-x-6 gap-y-4">
+                        {/* Dynamic Fields from Schema */}
+                        {schema.length > 0 ? (
+                            schema.map(renderField)
+                        ) : (
+                            <div className="col-span-6 py-4 text-center text-muted-foreground italic">
+                                No form schema defined. Please check settings.
+                            </div>
+                        )}
 
-                    {/* Core Info */}
-                    <section className="grid grid-cols-2 gap-4">
-                        <div className="grid gap-2">
-                            <Label htmlFor="lead_name">Name *</Label>
-                            <Input
-                                id="lead_name"
-                                required
-                                value={formData.lead_name || ''}
-                                onChange={(e) => setFormData({ ...formData, lead_name: e.target.value })}
-                            />
+                        <div className="col-span-6 pt-10 pb-2">
+                            <h3 className="text-sm font-semibold text-primary/80 uppercase tracking-wider">Process & Notes</h3>
                         </div>
-                        <div className="grid gap-2">
-                            <Label htmlFor="company_name">Company</Label>
-                            <Input
-                                id="company_name"
-                                value={formData.company_name || ''}
-                                onChange={(e) => setFormData({ ...formData, company_name: e.target.value })}
-                            />
-                        </div>
-                        <div className="grid gap-2">
-                            <Label htmlFor="email">Email</Label>
-                            <Input
-                                id="email"
-                                type="email"
-                                value={formData.email || ''}
-                                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                            />
-                        </div>
-                        <div className="grid gap-2">
-                            <Label htmlFor="client_geography">Geography</Label>
-                            <Input
-                                id="client_geography"
-                                placeholder="e.g. USA, UK"
-                                value={formData.client_geography || ''}
-                                onChange={(e) => setFormData({ ...formData, client_geography: e.target.value })}
-                            />
-                        </div>
-                    </section>
 
-                    {/* URLs */}
-                    <section className="grid grid-cols-2 gap-4">
-                        <div className="grid gap-2">
-                            <Label htmlFor="linkedin_url">LinkedIn URL</Label>
-                            <Input
-                                id="linkedin_url"
-                                value={formData.linkedin_url || ''}
-                                onChange={(e) => setFormData({ ...formData, linkedin_url: e.target.value })}
-                            />
-                        </div>
-                        <div className="grid gap-2">
-                            <Label htmlFor="website_url">Website URL</Label>
-                            <Input
-                                id="website_url"
-                                value={formData.website_url || ''}
-                                onChange={(e) => setFormData({ ...formData, website_url: e.target.value })}
-                            />
-                        </div>
-                    </section>
-
-                    <hr className="border-gray-100" />
-
-                    {/* Segmentation */}
-                    <section className="grid grid-cols-3 gap-4">
-                        <div className="grid gap-2">
-                            <Label htmlFor="segment">Segment</Label>
-                            <Select
-                                value={formData.segment || 'Web2'}
-                                onValueChange={(val: string) => setFormData({ ...formData, segment: val as LeadSegment })}
-                            >
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Select" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="Web2">Web2</SelectItem>
-                                    <SelectItem value="Web3">Web3</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
-                        <div className="grid gap-2">
-                            <Label htmlFor="sub_segment">Sub Segment</Label>
-                            <Select
-                                value={formData.sub_segment || ''}
-                                onValueChange={(val: string) => setFormData({ ...formData, sub_segment: val as LeadSubSegment })}
-                            >
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Select" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="Exporter">Exporter</SelectItem>
-                                    <SelectItem value="Freelancer">Freelancer</SelectItem>
-                                    <SelectItem value="Agency">Agency</SelectItem>
-                                    <SelectItem value="Wallet">Wallet</SelectItem>
-                                    <SelectItem value="dApp">dApp</SelectItem>
-                                    <SelectItem value="Payments Infra">Payments Infra</SelectItem>
-                                    <SelectItem value="On-Ramp">On-Ramp</SelectItem>
-                                    <SelectItem value="Off-Ramp">Off-Ramp</SelectItem>
-                                    <SelectItem value="Both On-Off Ramp">Both On-Off Ramp</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
-                        <div className="grid gap-2">
-                            <Label htmlFor="product_fit">Product Fit</Label>
-                            <Select
-                                value={formData.product_fit || ''}
-                                onValueChange={(val: string) => setFormData({ ...formData, product_fit: val as LeadProductFit })}
-                            >
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Select" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="Trustodi">Trustodi</SelectItem>
-                                    <SelectItem value="Kima">Kima</SelectItem>
-                                    <SelectItem value="Both">Both</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
-                    </section>
-
-                    {/* Business Details */}
-                    <section className="grid grid-cols-2 gap-4">
-                        <div className="grid gap-2">
-                            <Label htmlFor="decision_maker_name">Decision Maker</Label>
-                            <Input
-                                id="decision_maker_name"
-                                placeholder="Name"
-                                value={formData.decision_maker_name || ''}
-                                onChange={(e) => setFormData({ ...formData, decision_maker_name: e.target.value })}
-                            />
-                        </div>
-                        <div className="grid gap-2">
-                            <Label htmlFor="role">Role</Label>
-                            <Input
-                                id="role"
-                                placeholder="e.g. CEO, CTO"
-                                value={formData.role || ''}
-                                onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-                            />
-                        </div>
-                        <div className="grid gap-2">
-                            <Label htmlFor="currency_flow">Currency Flow</Label>
-                            <Input
-                                id="currency_flow"
-                                placeholder="e.g. USD -> INR"
-                                value={formData.currency_flow || ''}
-                                onChange={(e) => setFormData({ ...formData, currency_flow: e.target.value })}
-                            />
-                        </div>
-                        <div className="grid gap-2">
-                            <Label htmlFor="use_case">Use Case</Label>
-                            <Input
-                                id="use_case"
-                                placeholder="e.g. Payroll, Vendors"
-                                value={formData.use_case || ''}
-                                onChange={(e) => setFormData({ ...formData, use_case: e.target.value })}
-                            />
-                        </div>
-                    </section>
-
-                    {/* Custom Fields */}
-                    {customFields.length > 0 && (
-                        <div className="grid grid-cols-2 gap-4 border-t pt-4">
-                            <h3 className="col-span-2 text-sm font-medium text-muted-foreground">Custom Fields</h3>
-                            {customFields.map((field) => (
-                                <div key={field.id} className="grid gap-2">
-                                    <Label htmlFor={field.id}>
-                                        {field.label} {field.required && '*'}
-                                    </Label>
-                                    {field.type === 'select' ? (
-                                        <Select
-                                            value={formData.custom_data?.[field.label] as string || ''}
-                                            onValueChange={(val) => setFormData({
-                                                ...formData,
-                                                custom_data: { ...formData.custom_data, [field.label]: val }
-                                            })}
-                                        >
-                                            <SelectTrigger>
-                                                <SelectValue placeholder="Select..." />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                {field.options?.map((opt) => (
-                                                    <SelectItem key={opt} value={opt}>{opt}</SelectItem>
-                                                )) || (
-                                                        // Fallback if no options are defined (which shouldn't happen for valid select types)
-                                                        <>
-                                                            <SelectItem value="Yes">Yes</SelectItem>
-                                                            <SelectItem value="No">No</SelectItem>
-                                                        </>
-                                                    )}
-                                            </SelectContent>
-                                        </Select>
-                                    ) : field.type === 'textarea' ? (
-                                        <Textarea
-                                            id={field.id}
-                                            placeholder={field.placeholder}
-                                            value={formData.custom_data?.[field.label] as string || ''}
-                                            onChange={(e) => setFormData({
-                                                ...formData,
-                                                custom_data: { ...formData.custom_data, [field.label]: e.target.value }
-                                            })}
-                                        />
-                                    ) : (
-                                        <Input
-                                            id={field.id}
-                                            type={field.type}
-                                            placeholder={field.placeholder}
-                                            required={field.required}
-                                            value={formData.custom_data?.[field.label] as string || ''}
-                                            onChange={(e) => setFormData({
-                                                ...formData,
-                                                custom_data: { ...formData.custom_data, [field.label]: e.target.value }
-                                            })}
-                                        />
-                                    )}
-                                </div>
-                            ))}
-                        </div>
-                    )}
-
-                    <hr className="border-gray-100" />
-
-                    {/* Sales Process */}
-                    <section className="grid grid-cols-2 gap-4">
-                        <div className="grid gap-2">
+                        {/* Sales Process - Standard hardcoded below dynamic part for now */}
+                        <div className="col-span-3 grid gap-2">
                             <Label htmlFor="status">Status</Label>
                             <Select
                                 value={formData.status || 'New'}
                                 onValueChange={(val: string) => setFormData({ ...formData, status: val as LeadStatus })}
                             >
-                                <SelectTrigger>
+                                <SelectTrigger className="bg-background/50">
                                     <SelectValue placeholder="Select status" />
                                 </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="New">New</SelectItem>
-                                    <SelectItem value="Contacted">Contacted</SelectItem>
-                                    <SelectItem value="Demo Scheduled">Demo Scheduled</SelectItem>
-                                    <SelectItem value="Negotiation">Negotiation</SelectItem>
-                                    <SelectItem value="Onboarded">Onboarded</SelectItem>
-                                    <SelectItem value="Lost">Lost</SelectItem>
+                                <SelectContent className="backdrop-blur-xl bg-background/80 border-white/10 shadow-2xl">
+                                    <SelectItem value="New" className="hover:bg-primary/10 transition-colors">New</SelectItem>
+                                    <SelectItem value="Contacted" className="hover:bg-primary/10 transition-colors">Contacted</SelectItem>
+                                    <SelectItem value="Demo Scheduled" className="hover:bg-primary/10 transition-colors">Demo Scheduled</SelectItem>
+                                    <SelectItem value="Negotiation" className="hover:bg-primary/10 transition-colors">Negotiation</SelectItem>
+                                    <SelectItem value="Onboarded" className="hover:bg-primary/10 transition-colors">Onboarded</SelectItem>
+                                    <SelectItem value="Lost" className="hover:bg-primary/10 transition-colors">Lost</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
-                        <div className="grid gap-2">
+                        <div className="col-span-3 grid gap-2">
                             <Label htmlFor="source">Source</Label>
                             <Select
                                 value={formData.source || 'Website'}
                                 onValueChange={(val: string) => setFormData({ ...formData, source: val as LeadSource })}
                             >
-                                <SelectTrigger>
+                                <SelectTrigger className="bg-background/50">
                                     <SelectValue placeholder="Select source" />
                                 </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="Website">Website</SelectItem>
-                                    <SelectItem value="LinkedIn">LinkedIn</SelectItem>
-                                    <SelectItem value="Referral">Referral</SelectItem>
-                                    <SelectItem value="Cold Outreach">Cold Outreach</SelectItem>
-                                    <SelectItem value="Facebook Ads">Facebook Ads</SelectItem>
-                                    <SelectItem value="Google Ads">Google Ads</SelectItem>
-                                    <SelectItem value="Instagram Ads">Instagram Ads</SelectItem>
+                                <SelectContent className="backdrop-blur-xl bg-background/80 border-white/10 shadow-2xl">
+                                    <SelectItem value="Website" className="hover:bg-primary/10 transition-colors">Website</SelectItem>
+                                    <SelectItem value="LinkedIn" className="hover:bg-primary/10 transition-colors">LinkedIn</SelectItem>
+                                    <SelectItem value="Referral" className="hover:bg-primary/10 transition-colors">Referral</SelectItem>
+                                    <SelectItem value="Cold Outreach" className="hover:bg-primary/10 transition-colors">Cold Outreach</SelectItem>
+                                    <SelectItem value="Facebook Ads" className="hover:bg-primary/10 transition-colors">Facebook Ads</SelectItem>
+                                    <SelectItem value="Google Ads" className="hover:bg-primary/10 transition-colors">Google Ads</SelectItem>
+                                    <SelectItem value="Instagram Ads" className="hover:bg-primary/10 transition-colors">Instagram Ads</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
-                        <div className="grid gap-2">
+
+                        <div className="col-span-3 grid gap-2">
                             <Label htmlFor="next_followup">Next Follow-up</Label>
                             <Input
                                 id="next_followup"
                                 type="datetime-local"
                                 value={toLocalISOString(formData.next_followup_date || null)}
                                 onChange={(e) => setFormData({ ...formData, next_followup_date: e.target.value ? new Date(e.target.value).toISOString() : null })}
+                                className="bg-background/50"
                             />
                         </div>
-                        <div className="grid gap-2">
+                        <div className="col-span-3 grid gap-2">
                             <Label htmlFor="last_contact">Last Contact</Label>
                             <Input
                                 id="last_contact"
                                 type="datetime-local"
                                 value={toLocalISOString(formData.last_contact_date || null)}
                                 onChange={(e) => setFormData({ ...formData, last_contact_date: e.target.value ? new Date(e.target.value).toISOString() : null })}
+                                className="bg-background/50"
                             />
                         </div>
-                    </section>
 
-                    <div className="grid gap-2">
-                        <Label htmlFor="notes">Notes</Label>
-                        <Textarea
-                            id="notes"
-                            placeholder="Additional details..."
-                            value={formData.notes || ''}
-                            onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                        />
-                    </div>
-
-                    {/* Collapsible Marketing */}
-                    <div className="border rounded-md p-3">
-                        <div
-                            className="flex items-center justify-between cursor-pointer"
-                            onClick={() => setShowMarketing(!showMarketing)}
-                        >
-                            <span className="text-sm font-medium">Marketing Details (UTMs)</span>
-                            {showMarketing ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                        <div className="col-span-6 grid gap-2">
+                            <Label htmlFor="notes">Internal Notes</Label>
+                            <Textarea
+                                id="notes"
+                                placeholder="Additional details..."
+                                value={formData.notes || ''}
+                                onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                                className="min-h-[100px] bg-background/50"
+                            />
                         </div>
 
-                        {showMarketing && (
-                            <div className="grid grid-cols-2 gap-4 mt-4">
-                                <div className="grid gap-2">
-                                    <Label htmlFor="utm_source">UTM Source</Label>
-                                    <Input
-                                        id="utm_source"
-                                        value={formData.utm_source || ''}
-                                        onChange={(e) => setFormData({ ...formData, utm_source: e.target.value })}
-                                    />
-                                </div>
-                                <div className="grid gap-2">
-                                    <Label htmlFor="utm_medium">UTM Medium</Label>
-                                    <Input
-                                        id="utm_medium"
-                                        value={formData.utm_medium || ''}
-                                        onChange={(e) => setFormData({ ...formData, utm_medium: e.target.value })}
-                                    />
-                                </div>
-                                <div className="grid gap-2">
-                                    <Label htmlFor="utm_campaign">UTM Campaign</Label>
-                                    <Input
-                                        id="utm_campaign"
-                                        value={formData.utm_campaign || ''}
-                                        onChange={(e) => setFormData({ ...formData, utm_campaign: e.target.value })}
-                                    />
-                                </div>
-                                <div className="grid gap-2">
-                                    <Label htmlFor="utm_content">UTM Content</Label>
-                                    <Input
-                                        id="utm_content"
-                                        value={formData.utm_content || ''}
-                                        onChange={(e) => setFormData({ ...formData, utm_content: e.target.value })}
-                                    />
-                                </div>
+                        {/* Collapsible Marketing */}
+                        <div className="col-span-6 border border-white/10 rounded-xl p-4 mt-2 bg-white/5 shadow-inner">
+                            <div
+                                className="flex items-center justify-between cursor-pointer group"
+                                onClick={() => setShowMarketing(!showMarketing)}
+                            >
+                                <span className="text-sm font-semibold tracking-wide">MARKETING ATTRIBUTION (UTMS)</span>
+                                {showMarketing ? <ChevronUp className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" /> : <ChevronDown className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />}
                             </div>
-                        )}
+
+                            {showMarketing && (
+                                <div className="grid grid-cols-6 gap-4 mt-6">
+                                    <div className="col-span-3 grid gap-2">
+                                        <Label htmlFor="utm_source" className="text-xs">UTM Source</Label>
+                                        <Input
+                                            id="utm_source"
+                                            value={formData.utm_source || ''}
+                                            onChange={(e) => setFormData({ ...formData, utm_source: e.target.value })}
+                                            className="bg-background/30 h-8 text-sm"
+                                        />
+                                    </div>
+                                    <div className="col-span-3 grid gap-2">
+                                        <Label htmlFor="utm_medium" className="text-xs">UTM Medium</Label>
+                                        <Input
+                                            id="utm_medium"
+                                            value={formData.utm_medium || ''}
+                                            onChange={(e) => setFormData({ ...formData, utm_medium: e.target.value })}
+                                            className="bg-background/30 h-8 text-sm"
+                                        />
+                                    </div>
+                                    <div className="col-span-3 grid gap-2">
+                                        <Label htmlFor="utm_campaign" className="text-xs">UTM Campaign</Label>
+                                        <Input
+                                            id="utm_campaign"
+                                            value={formData.utm_campaign || ''}
+                                            onChange={(e) => setFormData({ ...formData, utm_campaign: e.target.value })}
+                                            className="bg-background/30 h-8 text-sm"
+                                        />
+                                    </div>
+                                    <div className="col-span-3 grid gap-2">
+                                        <Label htmlFor="utm_content" className="text-xs">UTM Content</Label>
+                                        <Input
+                                            id="utm_content"
+                                            value={formData.utm_content || ''}
+                                            onChange={(e) => setFormData({ ...formData, utm_content: e.target.value })}
+                                            className="bg-background/30 h-8 text-sm"
+                                        />
+                                    </div>
+                                </div>
+                            )}
+                        </div>
                     </div>
 
                     {lead && (
-                        <div className="border-t pt-4">
-                            <Label className="mb-2 block">Activity History</Label>
+                        <div className="mt-12 pt-8 border-t border-white/10">
+                            <Label className="mb-6 block text-lg font-bold tracking-tight">Activity Timeline</Label>
                             <ActivityLogList leadId={lead.id} />
                         </div>
                     )}
-
-                    <DialogFooter>
-                        <Button type="submit" disabled={loading}>
-                            {loading ? 'Saving...' : 'Save Lead'}
-                        </Button>
-                    </DialogFooter>
                 </form>
+
+                <DialogFooter className="px-8 py-6 border-t border-white/10 bg-white/5 shrink-0">
+                    <Button onClick={() => onOpenChange(false)} variant="ghost" className="hover:bg-white/5 transition-colors">Cancel</Button>
+                    <Button
+                        type="submit"
+                        form="lead-form-id"
+                        disabled={loading}
+                        className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold px-6 shadow-lg shadow-primary/20 transition-all active:scale-95"
+                    >
+                        {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        {lead ? 'Update Lead Profile' : 'Create New Lead'}
+                    </Button>
+                </DialogFooter>
             </DialogContent>
         </Dialog>
     );
 }
+

@@ -109,10 +109,25 @@ export default function DashboardPage() {
             {/* Dashboard Controls */}
             <div className="flex items-center space-x-2">
                 <Tabs defaultValue="all" className="w-[400px]" onValueChange={(val) => setSegmentFilter(val as 'all' | 'Web2' | 'Web3')}>
-                    <TabsList>
-                        <TabsTrigger value="all">All Segments</TabsTrigger>
-                        <TabsTrigger value="Web2">Web2</TabsTrigger>
-                        <TabsTrigger value="Web3">Web3</TabsTrigger>
+                    <TabsList className="bg-muted p-1 border border-border/50 w-full h-auto">
+                        <TabsTrigger
+                            value="all"
+                            className="flex-1 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md transition-all duration-300"
+                        >
+                            All Segments
+                        </TabsTrigger>
+                        <TabsTrigger
+                            value="Web2"
+                            className="flex-1 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md transition-all duration-300"
+                        >
+                            Web2
+                        </TabsTrigger>
+                        <TabsTrigger
+                            value="Web3"
+                            className="flex-1 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md transition-all duration-300"
+                        >
+                            Web3
+                        </TabsTrigger>
                     </TabsList>
                 </Tabs>
             </div>
