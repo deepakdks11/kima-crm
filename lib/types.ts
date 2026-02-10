@@ -13,8 +13,8 @@ export interface Lead {
     email: string | null;
     linkedin_url: string | null;
     website_url: string | null;
-    segment: LeadSegment;
-    sub_segment: LeadSubSegment | null;
+    segment: string[]; // Changed from LeadSegment to string[] for multi-select
+    sub_segment: string[] | null; // Changed from LeadSubSegment to string[]
     product_fit: LeadProductFit | null;
     client_geography: string | null;
     currency_flow: string | null;

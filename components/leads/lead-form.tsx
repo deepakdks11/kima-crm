@@ -21,6 +21,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import { MultiSelect } from '@/components/ui/multi-select';
 import { Lead, LeadSegment, LeadSubSegment, LeadProductFit, LeadStatus, LeadSource, FormField } from '@/lib/types';
 import { ChevronDown, ChevronUp, Loader2 } from 'lucide-react';
 import { ActivityLogList } from '@/components/activity/activity-log-list';
@@ -64,8 +65,9 @@ export function LeadForm({ open, onOpenChange, lead }: LeadFormProps) {
         email: '',
         linkedin_url: '',
         website_url: '',
-        segment: 'Web2',
-        sub_segment: null,
+        website_url: '',
+        segment: ['Web2'],
+        sub_segment: [],
         product_fit: null,
         client_geography: '',
         currency_flow: '',
@@ -98,8 +100,9 @@ export function LeadForm({ open, onOpenChange, lead }: LeadFormProps) {
                 email: '',
                 linkedin_url: '',
                 website_url: '',
-                segment: 'Web2',
-                sub_segment: null,
+                website_url: '',
+                segment: ['Web2'],
+                sub_segment: [],
                 product_fit: null,
                 client_geography: '',
                 currency_flow: '',
@@ -224,12 +227,41 @@ export function LeadForm({ open, onOpenChange, lead }: LeadFormProps) {
     const renderField = (field: FormField) => {
         if (field.hidden) return null;
 
-        // Heuristic for column spans in a 6-column grid
-        let colSpan = "col-span-3"; // Default half-width
+        // Heuristic for column spans
+        let colSpan = "col-span-3";
         if (field.type === 'section' || field.type === 'divider' || field.type === 'textarea') {
-            colSpan = "col-span-6"; // Full-width
+            colSpan = "col-span-6";
         } else if (['segment', 'sub_segment', 'product_fit'].includes(field.field_key || '')) {
-            colSpan = "col-span-2"; // Third-width
+            colSpan = "col-span-2";
+        }
+
+        // Special handling for segment and sub_segment to use MultiSelect
+        if (field.field_key === 'segment') {
+            return (
+                <div key={field.id} className={cn("grid gap-2", colSpan)}>
+                    <Label htmlFor={field.id}>{field.label} {field.required && '*'}</Label>
+                    <MultiSelect
+                        options={['Web2', 'Web3']}
+                        selected={formData.segment || []}
+                        onChange={(val) => setFormData(prev => ({ ...prev, segment: val }))}
+                        placeholder="Select segments..."
+                    />
+                </div>
+            );
+        }
+
+        if (field.field_key === 'sub_segment') {
+            return (
+                <div key={field.id} className={cn("grid gap-2", colSpan)}>
+                    <Label htmlFor={field.id}>{field.label} {field.required && '*'}</Label>
+                    <MultiSelect
+                        options={['Exporter', 'Freelancer', 'Agency', 'Wallet', 'dApp', 'Payments Infra', 'On-Ramp', 'Off-Ramp', 'Both On-Off Ramp']}
+                        selected={formData.sub_segment || []}
+                        onChange={(val) => setFormData(prev => ({ ...prev, sub_segment: val }))}
+                        placeholder="Select sub-segments..."
+                    />
+                </div>
+            );
         }
 
         switch (field.type) {

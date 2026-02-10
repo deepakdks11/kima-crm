@@ -10,6 +10,7 @@ import { format } from "date-fns";
 import { cn } from '@/lib/utils';
 import { LucideIcon } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { LeadsBySourceChart, ConversionRateCard } from "@/components/dashboard/analytics-charts";
 
 interface KPICardProps {
     title: string;
@@ -31,6 +32,8 @@ export default function DashboardPage() {
     });
     const [pipelineData, setPipelineData] = useState<{ name: string; value: number }[]>([]);
     const [segmentData, setSegmentData] = useState<{ name: string; value: number }[]>([]);
+    const [sourceData, setSourceData] = useState<{ name: string; value: number }[]>([]);
+    const [conversionStats, setConversionStats] = useState({ total: 0, converted: 0 });
     const [lastUpdated, setLastUpdated] = useState<string>('');
     const [loading, setLoading] = useState(true);
 
@@ -43,7 +46,7 @@ export default function DashboardPage() {
             try {
                 const { data: leads, error } = await supabase
                     .from('leads')
-                    .select('status, segment');
+                    .select('status, segment, source');
 
                 if (error) throw error;
 
@@ -51,13 +54,19 @@ export default function DashboardPage() {
                     // Apply filtering based on selected segment
                     const filteredLeads = segmentFilter === 'all'
                         ? leads
-                        : leads.filter(l => l.segment === segmentFilter);
+                        : leads.filter(lead => {
+                            if (Array.isArray(lead.segment)) {
+                                return lead.segment.includes(segmentFilter);
+                            }
+                            return lead.segment === segmentFilter;
+                        });
 
                     const total = filteredLeads.length;
-                    // Web3 count always shows total Web3 regardless of filter, or maybe it should show filtered?
-                    // "Web3 Segment" KPI usually implies specific count. Let's keep it as total Web3 for context, 
-                    // or if filter is Web2, it might be 0. Let's make it reflect the current dataset.
-                    const web3 = filteredLeads.filter(l => l.segment === 'Web3').length;
+
+                    const web3 = filteredLeads.filter(l => {
+                        if (Array.isArray(l.segment)) return l.segment.includes('Web3');
+                        return l.segment === 'Web3';
+                    }).length;
                     const demos = filteredLeads.filter(l => l.status === 'Demo Scheduled').length;
                     const active = filteredLeads.filter(l => ['Negotiation', 'Demo Scheduled', 'Contacted'].includes(l.status)).length;
 
@@ -77,12 +86,30 @@ export default function DashboardPage() {
                     setPipelineData(pData);
 
                     // Segment aggregation
-                    const uniqueSegments = Array.from(new Set(filteredLeads.map(l => l.segment || 'Other')));
+                    const allSegments = filteredLeads.flatMap(l => Array.isArray(l.segment) ? l.segment : [l.segment]).filter(Boolean);
+                    const uniqueSegments = Array.from(new Set(allSegments));
                     const sData = uniqueSegments.map(seg => ({
-                        name: seg,
-                        value: filteredLeads.filter(l => l.segment === seg).length
+                        name: seg || 'Other',
+                        value: allSegments.filter(s => s === seg).length
                     }));
                     setSegmentData(sData);
+
+                    // Source aggregation
+                    const sources = filteredLeads.map(l => l.source || 'Unknown');
+                    const uniqueSources = Array.from(new Set(sources));
+                    const srcData = uniqueSources.map(src => ({
+                        name: src,
+                        value: sources.filter(s => s === src).length
+                    })).sort((a, b) => b.value - a.value).slice(0, 5); // Top 5
+                    setSourceData(srcData);
+
+                    // Conversion Stats (Simple: New vs (Demo+Negotiation+Onboarded))
+                    // A "Converted" lead is typically one that moved past 'New'/'Contacted' or specifically is 'Onboarded'.
+                    // Let's define "Converted" as reached "Demo Scheduled" or later for this metric, or strictly "Onboarded".
+                    // BDM usage: "Leads to Deals" implies Onboarded. usage "Leads to Opportunities" implies Demo.
+                    // Let's use "Qualified" (Demo+) for now as it's a better BDM metric for mid-funnel.
+                    const convertedCount = filteredLeads.filter(l => ['Demo Scheduled', 'Negotiation', 'Onboarded'].includes(l.status)).length;
+                    setConversionStats({ total: total, converted: convertedCount });
                 }
             } catch (error) {
                 console.error("Error fetching dashboard data", error);
@@ -207,6 +234,43 @@ export default function DashboardPage() {
                         <SegmentPieChart data={segmentData} />
                     </CardContent>
                 </Card>
+            </div>
+
+            {/* BDM Analytics Section */}
+            <div className="grid gap-4 md:gap-6 grid-cols-1 lg:grid-cols-7">
+                <Card className="lg:col-span-4 overflow-hidden border-border/50 shadow-sm hover:shadow-md transition-shadow">
+                    <CardHeader className="border-b bg-muted/30">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <CardTitle className="text-lg font-semibold">Leads by Source</CardTitle>
+                                <CardDescription>Where are your leads coming from?</CardDescription>
+                            </div>
+                            <div className="h-10 w-10 rounded-xl bg-blue-500/10 flex items-center justify-center">
+                                <Activity className="h-5 w-5 text-blue-500" />
+                            </div>
+                        </div>
+                    </CardHeader>
+                    <CardContent className="pt-6">
+                        <LeadsBySourceChart data={sourceData} />
+                    </CardContent>
+                </Card>
+
+                <div className="lg:col-span-3 grid gap-6">
+                    <ConversionRateCard totalLeads={conversionStats.total} convertedLeads={conversionStats.converted} />
+
+                    <Card className="flex-1 border-border/50 shadow-sm">
+                        <CardHeader>
+                            <CardTitle className="text-lg">Quick Insights</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <ul className="space-y-2 text-sm text-muted-foreground">
+                                <li>• Top lead source is <strong>{sourceData[0]?.name || 'N/A'}</strong>.</li>
+                                <li>• <strong>{Math.round((stats.web3Segments / (stats.totalLeads || 1)) * 100)}%</strong> of leads are Web3.</li>
+                                <li>• <strong>{stats.demoScheduled}</strong> demos currently scheduled.</li>
+                            </ul>
+                        </CardContent>
+                    </Card>
+                </div>
             </div>
 
             {/* Today's Work Section */}

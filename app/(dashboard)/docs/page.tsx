@@ -25,7 +25,7 @@ export default function DocsPage() {
         { icon: Zap, title: 'Quick Start', description: 'Get started in 3 steps', href: '#quick-start' },
         { icon: Users, title: 'Team Guide', description: 'Collaborate with your team', href: '#team' },
         { icon: TrendingUp, title: 'Pipeline Management', description: 'Manage your sales pipeline', href: '#pipeline' },
-        { icon: Target, title: 'Lead Scoring', description: 'Prioritize your leads', href: '#scoring' },
+        { icon: FileText, title: 'Data Tools', description: 'Import, Export & Reports', href: '#data-tools' },
     ];
 
     return (
@@ -261,6 +261,67 @@ export default function DocsPage() {
                         </div>
                     </CardContent>
                 </Card>
+
+                {/* Data Management & Analytics (New) */}
+                <div id="data-tools" className="grid gap-6 md:grid-cols-2">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2">
+                                <FileText className="h-5 w-5 text-primary" />
+                                Data Management
+                            </CardTitle>
+                            <CardDescription>Import and Export your leads</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4 text-sm">
+                            <div>
+                                <h4 className="font-semibold mb-1">Bulk Import</h4>
+                                <p className="text-muted-foreground mb-2">
+                                    Upload a CSV file to add multiple leads at once. The system now supports <strong>Bulk Updates</strong>: if an email matches an existing lead, that lead will be updated with the new information.
+                                </p>
+                                <ul className="list-disc list-inside text-muted-foreground">
+                                    <li>Download the template from the Import dialog.</li>
+                                    <li>Separate multiple segments with commas (e.g., "Web2, Web3").</li>
+                                </ul>
+                            </div>
+                            <div>
+                                <h4 className="font-semibold mb-1">Export Data</h4>
+                                <p className="text-muted-foreground">
+                                    Need to analyze data in Excel or share with a partner? Use the <strong>Export CSV</strong> button on the Leads page to download your entire lead database, including all multi-select segment tags.
+                                </p>
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2">
+                                <TrendingUp className="h-5 w-5 text-primary" />
+                                Analytics & Reporting
+                            </CardTitle>
+                            <CardDescription>Insights for Business Development</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4 text-sm">
+                            <div>
+                                <h4 className="font-semibold mb-1">Leads by Source</h4>
+                                <p className="text-muted-foreground">
+                                    Track where your best leads are coming from (e.g., Website, LinkedIn, Referrals) with the new visual breakdown on the dashboard.
+                                </p>
+                            </div>
+                            <div>
+                                <h4 className="font-semibold mb-1">Conversion Rate</h4>
+                                <p className="text-muted-foreground">
+                                    Monitor your team's efficiency with the <strong>Conversion Rate</strong> KPI. This tracks the percentage of leads that progress from "New" to "Demo Scheduled", "Negotiation", or "Onboarded".
+                                </p>
+                            </div>
+                            <div>
+                                <h4 className="font-semibold mb-1">Multi-Segment Analysis</h4>
+                                <p className="text-muted-foreground">
+                                    Leads can now belong to multiple segments (e.g., both "Wallet" and "dApp"). The dashboard analytics automatically account for this overlap, ensuring you see the full picture of your market reach.
+                                </p>
+                            </div>
+                        </CardContent>
+                    </Card>
+                </div>
 
                 {/* Lead Scoring */}
                 <Card id="scoring">

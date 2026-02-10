@@ -31,6 +31,7 @@ import {
 } from 'lucide-react';
 import { LeadForm } from '@/components/leads/lead-form';
 import { CSVImporter } from '@/components/leads/csv-importer';
+import { LeadExporter } from '@/components/leads/lead-exporter';
 import { LeadCard } from '@/components/leads/lead-card';
 import { EmptyState } from '@/components/ui/empty-state';
 import { DeleteConfirmationDialog } from '@/components/settings/delete-confirmation-dialog';
@@ -46,14 +47,16 @@ import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { useRouter, useSearchParams } from 'next/navigation';
 
-const getSegmentBadgeClass = (segment: string) => {
-    const segmentLower = segment.toLowerCase();
-    if (segmentLower.includes('export')) return 'badge-exporter';
-    if (segmentLower.includes('freelance')) return 'badge-freelancer';
-    if (segmentLower.includes('agency')) return 'badge-agency';
-    if (segmentLower.includes('wallet')) return 'badge-wallet';
-    if (segmentLower.includes('dapp')) return 'badge-dapp';
-    if (segmentLower.includes('payment')) return 'badge-payments';
+const getSegmentBadgeClass = (segment: string | string[]) => {
+    // If array, use the first one or join them for classification
+    const segmentStr = Array.isArray(segment) ? segment.join(' ').toLowerCase() : segment.toLowerCase();
+
+    if (segmentStr.includes('export')) return 'badge-exporter';
+    if (segmentStr.includes('freelance')) return 'badge-freelancer';
+    if (segmentStr.includes('agency')) return 'badge-agency';
+    if (segmentStr.includes('wallet')) return 'badge-wallet';
+    if (segmentStr.includes('dapp')) return 'badge-dapp';
+    if (segmentStr.includes('payment')) return 'badge-payments';
     return '';
 };
 
@@ -143,7 +146,11 @@ export function LeadTable({ initialLeads }: LeadTableProps) {
             if (sortLabel === 'score_desc') return (b.lead_score || 0) - (a.lead_score || 0);
             if (sortLabel === 'score_asc') return (a.lead_score || 0) - (b.lead_score || 0);
             if (sortLabel === 'status_asc') return (a.status || '').localeCompare(b.status || '');
-            if (sortLabel === 'segment_asc') return (a.segment || '').localeCompare(b.segment || '');
+            if (sortLabel === 'segment_asc') {
+                const segA = Array.isArray(a.segment) ? a.segment.join('') : (a.segment || '');
+                const segB = Array.isArray(b.segment) ? b.segment.join('') : (b.segment || '');
+                return segA.localeCompare(segB);
+            }
             // Default: Newest first
             return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
         });
@@ -159,6 +166,7 @@ export function LeadTable({ initialLeads }: LeadTableProps) {
                     </p>
                 </div>
                 <div className="flex items-center gap-2">
+                    <LeadExporter />
                     <Button variant="outline" size="sm" onClick={() => setIsImportOpen(true)} className="touch-target">
                         <Upload className="mr-2 h-4 w-4" />
                         <span className="hidden sm:inline">Import CSV</span>
@@ -280,7 +288,7 @@ export function LeadTable({ initialLeads }: LeadTableProps) {
                                             variant="outline"
                                             className={cn("font-normal", getSegmentBadgeClass(lead.segment))}
                                         >
-                                            {lead.segment}
+                                            {Array.isArray(lead.segment) ? lead.segment.join(', ') : lead.segment}
                                         </Badge>
                                     </TableCell>
                                     <TableCell>
