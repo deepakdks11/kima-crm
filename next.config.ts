@@ -2,6 +2,10 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   /* config options here */
+  // @ts-ignore
+  turbopack: {
+    // rules: {},
+  }
 };
 
 const withPWA = require("@ducanh2912/next-pwa").default({

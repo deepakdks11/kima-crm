@@ -65,7 +65,7 @@ export function LeadForm({ open, onOpenChange, lead }: LeadFormProps) {
         email: '',
         linkedin_url: '',
         website_url: '',
-        website_url: '',
+
         segment: ['Web2'],
         sub_segment: [],
         product_fit: null,
@@ -100,7 +100,7 @@ export function LeadForm({ open, onOpenChange, lead }: LeadFormProps) {
                 email: '',
                 linkedin_url: '',
                 website_url: '',
-                website_url: '',
+
                 segment: ['Web2'],
                 sub_segment: [],
                 product_fit: null,
