@@ -33,11 +33,11 @@ export default async function SegmentPage({ params }: { params: { segment: strin
     let query = supabase.from('leads').select('*').order('created_at', { ascending: false });
 
     if (segmentFilter) {
-        query = query.eq('segment', segmentFilter);
+        // Use contains for array column
+        query = query.contains('segment', [segmentFilter]);
     }
     if (subSegmentFilter) {
-        // Improve logic: if subSegmentFilter is "Wallet" etc.
-        query = query.eq('sub_segment', subSegmentFilter);
+        query = query.contains('sub_segment', [subSegmentFilter]);
     }
 
     const { data: leads, error } = await query;

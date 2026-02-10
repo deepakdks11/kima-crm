@@ -12,14 +12,16 @@ interface LeadCardProps {
     lead: Lead;
 }
 
-const getSegmentBadgeClass = (segment: string) => {
-    const segmentLower = segment.toLowerCase();
-    if (segmentLower.includes('export')) return 'badge-exporter';
-    if (segmentLower.includes('freelance')) return 'badge-freelancer';
-    if (segmentLower.includes('agency')) return 'badge-agency';
-    if (segmentLower.includes('wallet')) return 'badge-wallet';
-    if (segmentLower.includes('dapp')) return 'badge-dapp';
-    if (segmentLower.includes('payment')) return 'badge-payments';
+const getSegmentBadgeClass = (segment: string | string[]) => {
+    // If array, use the first one or join them for classification
+    const segmentStr = Array.isArray(segment) ? segment.join(' ').toLowerCase() : (segment || '').toLowerCase();
+
+    if (segmentStr.includes('export')) return 'badge-exporter';
+    if (segmentStr.includes('freelance')) return 'badge-freelancer';
+    if (segmentStr.includes('agency')) return 'badge-agency';
+    if (segmentStr.includes('wallet')) return 'badge-wallet';
+    if (segmentStr.includes('dapp')) return 'badge-dapp';
+    if (segmentStr.includes('payment')) return 'badge-payments';
     return '';
 };
 
@@ -59,7 +61,7 @@ export function LeadCard({ lead }: LeadCardProps) {
                                 variant="outline"
                                 className={cn("text-xs", getSegmentBadgeClass(lead.segment))}
                             >
-                                {lead.segment}
+                                {Array.isArray(lead.segment) ? lead.segment.join(', ') : lead.segment}
                             </Badge>
                         )}
                         {lead.status && (

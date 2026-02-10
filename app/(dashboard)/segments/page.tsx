@@ -73,9 +73,14 @@ export default function SegmentsPage() {
                 if (leads) {
                     const counts: Record<string, number> = {};
                     SEGMENT_CONFIG.forEach(seg => {
-                        counts[seg.name] = leads.filter(l =>
-                            l.sub_segment?.toLowerCase().includes(seg.name.toLowerCase())
-                        ).length;
+                        counts[seg.name] = leads.filter(l => {
+                            if (!l.sub_segment) return false;
+                            if (Array.isArray(l.sub_segment)) {
+                                return l.sub_segment.some(s => s.toLowerCase().includes(seg.name.toLowerCase()));
+                            }
+                            // Fallback if somehow string (shouldn't happen with types but runtime safe)
+                            return String(l.sub_segment).toLowerCase().includes(seg.name.toLowerCase());
+                        }).length;
                     });
                     setSegmentCounts(counts);
                 }
