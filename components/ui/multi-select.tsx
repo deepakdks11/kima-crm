@@ -104,10 +104,6 @@ export function MultiSelect({
             </div>
             <div className="relative mt-2">
                 <div
-                    onMouseDown={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                    }}
                     className={cn(
                         "absolute w-full z-50 top-0 rounded-md border bg-background/95 backdrop-blur-xl border-white/10 text-popover-foreground shadow-2xl outline-none animate-in",
                         open ? "block" : "hidden"
