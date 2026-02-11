@@ -109,7 +109,7 @@ export function MultiSelect({
                         e.stopPropagation();
                     }}
                     className={cn(
-                        "absolute w-full z-50 top-0 rounded-md border bg-popover text-popover-foreground shadow-md outline-none animate-in",
+                        "absolute w-full z-50 top-0 rounded-md border bg-background/95 backdrop-blur-xl border-white/10 text-popover-foreground shadow-2xl outline-none animate-in",
                         open ? "block" : "hidden"
                     )}
                 >
@@ -123,15 +123,11 @@ export function MultiSelect({
                             {selectables.map((option) => (
                                 <CommandItem
                                     key={option}
-                                    onMouseDown={(e) => {
-                                        e.preventDefault();
-                                        e.stopPropagation();
-                                    }}
                                     onSelect={() => {
                                         setInputValue("");
                                         onChange([...selected, option]);
                                     }}
-                                    className="cursor-pointer"
+                                    className="cursor-pointer aria-selected:bg-primary/20 aria-selected:text-primary-foreground hover:bg-primary/20 hover:text-primary-foreground"
                                 >
                                     {option}
                                 </CommandItem>
